@@ -1,0 +1,407 @@
+/* LunaEye Main Stylesheet - Utopian Theme */
+
+/* Glass Morphism Base */
+.glass-panel {
+    background: rgba(15, 15, 35, 0.4);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel-sm {
+    background: rgba(15, 15, 35, 0.3);
+    backdrop-filter: blur(15px) saturate(150%);
+}
+
+.glass-button {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.glass-button-solid {
+    backdrop-filter: blur(10px);
+}
+
+/* Animated Border Flow */
+@keyframes border-flow {
+    0% {
+        background: linear-gradient(90deg, 
+            transparent 0%,
+            rgba(6, 182, 212, 0.5) 25%,
+            rgba(236, 72, 153, 0.5) 50%,
+            rgba(99, 102, 241, 0.5) 75%,
+            transparent 100%);
+        background-size: 200% 100%;
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.animate-border-flow {
+    animation: border-flow 3s linear infinite;
+}
+
+/* Pulsing Ring Animations */
+@keyframes pulse-ring {
+    0%, 100% {
+        transform: scale(0.95);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+@keyframes pulse-ring-delayed {
+    0%, 100% {
+        transform: scale(0.98);
+        opacity: 0.4;
+    }
+    50% {
+        transform: scale(1.02);
+        opacity: 0.7;
+    }
+}
+
+@keyframes pulse-ring-delayed-2 {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: scale(1.08);
+        opacity: 0.6;
+    }
+}
+
+.animate-pulse-ring {
+    animation: pulse-ring 4s ease-in-out infinite;
+}
+
+.animate-pulse-ring-delayed {
+    animation: pulse-ring-delayed 5s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+.animate-pulse-ring-delayed-2 {
+    animation: pulse-ring-delayed-2 6s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+/* Text Pulse Animation */
+@keyframes pulse-text {
+    0%, 100% {
+        opacity: 0.8;
+        filter: drop-shadow(0 0 10px currentColor);
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 30px currentColor);
+    }
+}
+
+.animate-pulse-text {
+    animation: pulse-text 3s ease-in-out infinite;
+}
+
+/* Spin Animations */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes spin-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
+}
+
+.animate-spin-reverse {
+    animation: spin-reverse 15s linear infinite;
+}
+
+/* Scan Lines Effect */
+.scan-lines {
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.1) 0px,
+        transparent 1px,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 3px
+    );
+    animation: scan 8s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scan {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(100px); }
+}
+
+/* State-specific Eye Styles */
+.state-idle #morphing-eye {
+    filter: saturate(0.9) brightness(0.9);
+}
+
+.state-listening #morphing-eye {
+    filter: saturate(1.5) brightness(1.3) drop-shadow(0 0 30px rgba(6, 182, 212, 0.8));
+    animation: eye-listening 1s ease-in-out infinite;
+}
+
+@keyframes eye-listening {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.state-thinking #morphing-eye {
+    filter: saturate(1.4) brightness(1.2) hue-rotate(20deg) drop-shadow(0 0 25px rgba(245, 158, 11, 0.8));
+    animation: eye-thinking 2s ease-in-out infinite;
+}
+
+@keyframes eye-thinking {
+    0%, 100% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(2deg) scale(1.03);
+    }
+}
+
+.state-speaking #morphing-eye {
+    filter: saturate(1.5) brightness(1.4) hue-rotate(60deg) drop-shadow(0 0 35px rgba(16, 185, 129, 0.9));
+    animation: eye-speaking 0.8s ease-in-out infinite;
+}
+
+@keyframes eye-speaking {
+    0%, 100% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.03);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+    75% {
+        transform: scale(1.03);
+    }
+}
+
+.state-waking #morphing-eye {
+    filter: saturate(1.6) brightness(1.5) drop-shadow(0 0 40px rgba(236, 72, 153, 0.9));
+    animation: eye-waking 0.6s ease-in-out infinite;
+}
+
+@keyframes eye-waking {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.1) rotate(3deg);
+    }
+}
+
+.state-error #morphing-eye {
+    filter: saturate(1.3) brightness(1.1) hue-rotate(340deg) drop-shadow(0 0 20px rgba(239, 68, 68, 0.9));
+    animation: eye-error 0.3s ease-in-out infinite;
+}
+
+@keyframes eye-error {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-3px);
+    }
+    75% {
+        transform: translateX(3px);
+    }
+}
+
+/* Glow Ring State Colors */
+.state-listening #glow-ring-1,
+.state-listening #glow-ring-2,
+.state-listening #glow-ring-3 {
+    border-color: rgba(6, 182, 212, 0.4);
+    box-shadow: 0 0 40px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.state-thinking #glow-ring-1,
+.state-thinking #glow-ring-2,
+.state-thinking #glow-ring-3 {
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.3), inset 0 0 40px rgba(245, 158, 11, 0.1);
+}
+
+.state-speaking #glow-ring-1,
+.state-speaking #glow-ring-2,
+.state-speaking #glow-ring-3 {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.3), inset 0 0 40px rgba(16, 185, 129, 0.1);
+}
+
+.state-waking #glow-ring-1,
+.state-waking #glow-ring-2,
+.state-waking #glow-ring-3 {
+    border-color: rgba(236, 72, 153, 0.4);
+    box-shadow: 0 0 40px rgba(236, 72, 153, 0.3), inset 0 0 40px rgba(236, 72, 153, 0.1);
+}
+
+/* Slider Styling */
+.slider-gradient::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #06b6d4, #ec4899);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.slider-gradient::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #06b6d4, #ec4899);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    border: none;
+}
+
+/* Microphone Active State */
+#mic-toggle.active {
+    color: #06b6d4;
+    border-color: rgba(6, 182, 212, 0.5);
+    background: rgba(6, 182, 212, 0.1);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+    animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(6, 182, 212, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 60px rgba(6, 182, 212, 0.2);
+    }
+}
+
+/* Smooth Transitions */
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus Styles */
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid rgba(6, 182, 212, 0.8);
+    outline-offset: 2px;
+}
+
+/* Utility Animations */
+.animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Hover Effects */
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 30px currentColor;
+}
+
+/* Fade Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .glass-panel {
+        backdrop-filter: blur(15px) saturate(150%);
+    }
+    
+    #morphing-eye {
+        width: 300px;
+        height: 300px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Performance Optimizations */
+#morphing-eye,
+#voice-visualizer,
+#particle-burst,
+.glass-panel {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #06b6d4, #ec4899);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0ea5e9, #f472b6);
+}

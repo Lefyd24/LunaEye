@@ -1,0 +1,12 @@
+<!-- Placeholder for favicon - replace with actual favicon file -->
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="16" cy="16" r="14" fill="url(#gradient)"/>
+<circle cx="16" cy="16" r="8" fill="rgba(255,255,255,0.3)"/>
+<circle cx="16" cy="16" r="3" fill="rgba(255,255,255,0.8)"/>
+<defs>
+<radialGradient id="gradient" cx="0%" cy="0%" r="100%">
+<stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+<stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1" />
+</radialGradient>
+</defs>
+</svg>

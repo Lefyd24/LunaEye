@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="LunaEye - Your futuristic AI personal assistant with 3D fluid visualization">
+    <meta name="theme-color" content="#06b6d4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>LunaEye - AI Assistant</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='%2306b6d4'/%3E%3Ccircle cx='50' cy='50' r='20' fill='%23fff'/%3E%3C/svg%3E" type="image/svg+xml">
+    
+    <style>
+        /* ============================================
+           LUNAEYE - Futuristic AI Interface
+           Design: Liquid Glassmorphism with Personality
+        ============================================ */
+        
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            /* Vibrant State Colors */
+            --color-idle: #8b5cf6;
+            --color-listening: #06b6d4;
+            --color-thinking: #f59e0b;
+            --color-speaking: #10b981;
+            --color-waking: #ec4899;
+            --color-error: #ef4444;
+            
+            /* Neon Accents */
+            --neon-cyan: #00f0ff;
+            --neon-magenta: #ff00ff;
+            --neon-purple: #bd00ff;
+            --neon-blue: #0066ff;
+            
+            /* Current state (updated by JS) */
+            --state-color: var(--color-idle);
+            --state-glow: var(--color-idle);
+            
+            /* Glassmorphism */
+            --glass-bg: rgba(15, 15, 25, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shine: rgba(255, 255, 255, 0.1);
+            
+            /* Typography */
+            --font-display: 'Orbitron', monospace;
+            --font-body: 'Rajdhani', sans-serif;
+        }
+        
+        /* ============================================
+           Base & Reset
+        ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        body {
+            font-family: var(--font-body);
+            color: #fff;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+        
+        /* ============================================
+           Fluid Background (Unchanged)
+        ============================================ */
+        #fluid-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+        
+        /* ============================================
+           Animated Gradient Overlay
+        ============================================ */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.1) 0%, transparent 60%);
+            z-index: 2;
+            pointer-events: none;
+            animation: gradientShift 20s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* ============================================
+           Main Container
+        ============================================ */
+        .ai-interface {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            gap: 2rem;
+        }
+        
+        /* ============================================
+           Liquid Glass Card
+        ============================================ */
+        .liquid-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 0 60px rgba(var(--state-color), 0.1);
+        }
+        
+        .liquid-glass::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(
+                135deg,
+                transparent 0%,
+                var(--glass-shine) 40%,
+                transparent 60%,
+                var(--glass-shine) 100%
+            );
+            opacity: 0;
+            transition: opacity 0.6s;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .liquid-glass:hover::before {
+            opacity: 1;
+            animation: liquidShine 3s ease-in-out infinite;
+        }
+        
+        @keyframes liquidShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(30deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(30deg); }
+        }
+        
+        /* ============================================
+           Header - Minimalist
+        ============================================ */
+        .ai-header {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .ai-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .ai-pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--state-color);
+            box-shadow: 
+                0 0 20px var(--state-color),
+                0 0 40px var(--state-color),
+                inset 0 0 10px var(--state-color);
+            animation: aiPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes aiPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.7;
+            }
+        }
+        
+        .ai-name {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            background: linear-gradient(
+                135deg,
+                var(--neon-cyan),
+                var(--neon-magenta),
+                var(--neon-purple)
+            );
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientText 5s ease infinite;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
+        }
+        
+        @keyframes gradientText {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .ai-controls {
+            display: flex;
+            gap: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .ai-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, var(--state-color) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .ai-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--state-color);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--state-color);
+        }
+        
+        .ai-btn:hover::before {
+            opacity: 0.3;
+        }
+        
+        .ai-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* ============================================
+           Central Brain - Main Display
+        ============================================ */
+        .ai-brain {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+            padding: 3rem;
+            position: relative;
+        }
+        
+        /* Personality Core - Animated Center */
+        .personality-core {
+            width: 240px;
+            height: 240px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .core-rings {
+            position: absolute;
+            inset: 0;
+        }
+        
+        .core-ring {
+            position: absolute;
+            inset: 0;
+            border: 2px solid var(--state-color);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: coreRing 3s ease-in-out infinite;
+        }
+        
+        .core-ring:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .core-ring:nth-child(2) {
+            animation-delay: 0.3s;
+            inset: 10%;
+        }
+        
+        .core-ring:nth-child(3) {
+            animation-delay: 0.6s;
+            inset: 20%;
+        }
+        
+        @keyframes coreRing {
+            0%, 100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.3;
+                border-width: 2px;
+            }
+            50% {
+                transform: scale(1.1) rotate(180deg);
+                opacity: 0.6;
+                border-width: 1px;
+            }
+        }
+        
+        .core-center {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle at 30% 30%,
+                rgba(255, 255, 255, 0.4),
+                var(--state-color) 30%,
+                transparent 70%
+            );
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--state-color);
+            box-shadow: 
+                0 0 40px var(--state-color),
+                0 0 80px var(--state-color),
+                inset 0 0 30px var(--state-color);
+            animation: coreBreath 4s ease-in-out infinite;
+            position: relative;
+            z-index: 5;
+        }
+        
+        @keyframes coreBreath {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 
+                    0 0 40px var(--state-color),
+                    0 0 80px var(--state-color),
+                    inset 0 0 30px var(--state-color);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 
+                    0 0 60px var(--state-color),
+                    0 0 120px var(--state-color),
+                    inset 0 0 40px var(--state-color);
+            }
+        }
+        
+        /* State Label */
+        .state-label {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--state-color);
+            text-shadow: 0 0 20px var(--state-color);
+            animation: stateGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes stateGlow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
+        /* ============================================
+           Communication Display
+        ============================================ */
+        .comm-display {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .comm-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 1.5rem 2rem;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transform: translateY(10px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .comm-card.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .comm-label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--state-color);
+            opacity: 0.7;
+        }
+        
+        .comm-text {
+            font-size: 1.125rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            min-height: 1.5rem;
+        }
+        
+        .comm-placeholder {
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* ============================================
+           Footer Status Bar
+        ============================================ */
+        .ai-footer {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .wave-visualizer {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+        }
+        
+        .wave-bar {
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to top, var(--state-color), rgba(255, 255, 255, 0.5));
+            border-radius: 2px;
+            transform-origin: bottom;
+            transition: all 0.3s;
+        }
+        
+        .wave-visualizer.active .wave-bar {
+            animation: waveBar 0.8s ease-in-out infinite;
+        }
+        
+        .wave-bar:nth-child(1) { animation-delay: 0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        .wave-bar:nth-child(6) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(7) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(8) { animation-delay: 0.1s; }
+        
+        @keyframes waveBar {
+            0%, 100% { transform: scaleY(0.3); opacity: 0.5; }
+            50% { transform: scaleY(1); opacity: 1; }
+        }
+        
+        .status-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .status-hint {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+        
+        .status-highlight {
+            color: var(--state-color);
+            font-weight: 700;
+            text-shadow: 0 0 10px var(--state-color);
+        }
+        
+        .mode-indicator {
+            font-size: 0.75rem;
+            font-family: var(--font-display);
+            color: var(--neon-cyan);
+            opacity: 0.7;
+        }
+        
+        /* ============================================
+           Settings Panel (Unchanged Logic)
+        ============================================ */
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .settings-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .settings-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .settings-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .settings-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+        
+        .settings-content {
+            padding: 2rem;
+        }
+        
+        .settings-section {
+            margin-bottom: 2rem;
+        }
+        
+        .settings-section-title {
+            font-family: var(--font-display);
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 1rem;
+        }
+        
+        .settings-item {
+            padding: 1rem 0;
+        }
+        
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .settings-label {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        /* Toggle Switch */
+        .toggle {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .toggle input {
+            display: none;
+        }
+        
+        .toggle-track {
+            width: 50px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 13px;
+            position: relative;
+            transition: background 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toggle input:checked + .toggle-track {
+            background: var(--state-color);
+            box-shadow: 0 0 20px var(--state-color);
+        }
+        
+        .toggle-thumb {
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .toggle input:checked + .toggle-track .toggle-thumb {
+            transform: translateX(24px);
+        }
+        
+        /* Slider */
+        .slider-container {
+            margin-top: 0.5rem;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--state-color);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--state-color);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--state-color);
+            cursor: pointer;
+            border: none;
+        }
+        
+        /* ============================================
+           Permission Modal (Unchanged Logic)
+        ============================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 3rem;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 40px var(--neon-cyan);
+        }
+        
+        .modal-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #fff;
+        }
+        
+        .modal-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-description {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: var(--font-body);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--neon-cyan);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* ============================================
+           Install Banner (Unchanged Logic)
+        ============================================ */
+        .install-banner {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s;
+            z-index: 50;
+            max-width: 90%;
+        }
+        
+        .install-banner.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .install-banner-text {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .install-banner-close {
+            width: 24px;
+            height: 24px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* ============================================
+           State-Specific Styling
+        ============================================ */
+        body[data-state="idle"] { --state-color: var(--color-idle); }
+        body[data-state="waking"] { --state-color: var(--color-waking); }
+        body[data-state="listening"] { --state-color: var(--color-listening); }
+        body[data-state="thinking"] { --state-color: var(--color-thinking); }
+        body[data-state="speaking"] { --state-color: var(--color-speaking); }
+        body[data-state="error"] { --state-color: var(--color-error); }
+        
+        /* ============================================
+           Responsive Design
+        ============================================ */
+        @media (max-width: 768px) {
+            .ai-interface {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .ai-header {
+                padding: 1rem;
+            }
+            
+            .ai-name {
+                font-size: 1.25rem;
+            }
+            
+            .personality-core {
+                width: 180px;
+                height: 180px;
+            }
+            
+            .core-center {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .ai-brain {
+                padding: 1.5rem;
+                gap: 2rem;
+            }
+            
+            .comm-card {
+                padding: 1rem 1.5rem;
+            }
+            
+            .ai-footer {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .settings-panel {
+                width: 95%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .ai-name {
+                font-size: 1rem;
+            }
+            
+            .ai-pulse {
+                width: 8px;
+                height: 8px;
+            }
+            
+            .personality-core {
+                width: 140px;
+                height: 140px;
+            }
+            
+            .core-center {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .state-label {
+                font-size: 1rem;
+            }
+            
+            .comm-text {
+                font-size: 1rem;
+            }
+        }
+        
+        /* ============================================
+           Reduced Motion
+        ============================================ */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body data-state="idle">
+    <!-- Fluid Simulation Background -->
+    <div id="fluid-container"></div>
+    
+    <!-- Main AI Interface -->
+    <div class="ai-interface">
+        <!-- Header -->
+        <div class="liquid-glass ai-header">
+            <div class="ai-brand">
+                <div class="ai-pulse"></div>
+                <h1 class="ai-name">LUNAEYE</h1>
+            </div>
+            
+            <div class="ai-controls">
+                <button class="ai-btn" id="mic-btn" title="Toggle Microphone">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                </button>
+                <button class="ai-btn" id="settings-btn" title="Settings">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Central Brain Display -->
+        <div class="ai-brain">
+            <!-- Personality Core -->
+            <div class="personality-core">
+                <div class="core-rings">
+                    <div class="core-ring"></div>
+                    <div class="core-ring"></div>
+                    <div class="core-ring"></div>
+                </div>
+                <div class="core-center"></div>
+            </div>
+            
+            <!-- State Label -->
+            <div class="state-label" id="state-indicator">IDLE</div>
+            
+            <!-- Communication Display -->
+            <div class="comm-display">
+                <!-- Transcript -->
+                <div class="comm-card" id="transcript-card">
+                    <div class="comm-label">LISTENING</div>
+                    <div class="comm-text" id="transcript-text">
+                        <span class="comm-placeholder" id="transcript-placeholder">Waiting for your voice...</span>
+                    </div>
+                </div>
+                
+                <!-- Response -->
+                <div class="comm-card" id="response-card">
+                    <div class="comm-label">RESPONSE</div>
+                    <div class="comm-text" id="response-text"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Status -->
+        <div class="liquid-glass ai-footer">
+            <div class="wave-visualizer" id="audio-indicator">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+            
+            <div class="status-info">
+                <div class="status-hint">Say <span class="status-highlight">"Hey Assistant"</span> to activate</div>
+                <div class="mode-indicator" id="voice-mode-indicator"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div class="settings-overlay" id="settings-overlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2 class="settings-title">SETTINGS</h2>
+                <button class="ai-btn" id="close-settings">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h3 class="settings-section-title">Voice</h3>
+                    <div class="settings-item">
+                        <div class="settings-row">
+                            <span class="settings-label">Wake Word Detection</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="wake-word-toggle" checked>
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-row">
+                            <span class="settings-label">Continuous Listening</span>
+                            <label class="toggle">
+                                <input type="checkbox" id="continuous-toggle" checked>
+                                <div class="toggle-track">
+                                    <div class="toggle-thumb"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3 class="settings-section-title">Visualization</h3>
+                    <div class="settings-item">
+                        <div class="settings-row">
+                            <span class="settings-label">Fluid Intensity</span>
+                        </div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="fluid-intensity" min="0" max="100" value="50">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3 class="settings-section-title">System</h3>
+                    <div class="settings-item">
+                        <div class="settings-row">
+                            <span class="settings-label">Version</span>
+                            <span class="settings-label" style="color: rgba(255,255,255,0.5)">2.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Permission Modal -->
+    <div class="modal-overlay" id="mic-permission-modal">
+        <div class="modal">
+            <div class="modal-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+            </div>
+            <h2 class="modal-title">Microphone Access</h2>
+            <p class="modal-description">LunaEye needs access to your microphone for voice interaction. Your privacy is protected.</p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="grant-mic-btn">Allow</button>
+                <button class="btn btn-secondary" id="deny-mic-btn">Deny</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Install Banner -->
+    <div class="install-banner" id="install-banner">
+        <span class="install-banner-text">Install LunaEye for the best experience</span>
+        <button class="btn btn-primary" id="install-btn" style="flex: none; padding: 0.5rem 1rem;">Install</button>
+        <button class="install-banner-close" id="close-install-banner">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="./assets/js/states.js"></script>
+    <script src="./assets/js/fluid-simulation.js"></script>
+    <script src="./assets/js/voice.js"></script>
+    <script src="./assets/js/ui.js"></script>
+    <script src="./assets/js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('./sw.js');
+                    console.log('Service Worker registered:', registration.scope);
+                    
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('New version available');
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.log('Service Worker registration failed:', error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
