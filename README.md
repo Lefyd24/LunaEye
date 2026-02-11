@@ -6,7 +6,8 @@
 [![WebGL](https://img.shields.io/badge/WebGL-Enabled-green)](https://www.khronos.org/webgl/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<video src='./demo_video.mp4' controls autoplay loop style="width:100%; max-width:1000px;"></video>
+## Demo Video
+<img src="./demo_video.gif" alt="LunaEye Demo" style="width:100%; max-width:800px; border-radius: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
 
 ## ✨ Features
 
@@ -46,8 +47,8 @@
 #### Option 1: Local Development Server
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/LunaEye_v1.git
-cd LunaEye_v1
+git clone https://github.com/lefyd24/LunaEye.git
+cd LunaEye
 
 # Serve with Python (recommended)
 python -m http.server 8000
@@ -223,7 +224,7 @@ When the backend uses tools that take longer than 15 seconds:
 ## 📂 Project Structure
 
 ```
-LunaEye_v1/
+LunaEye/
 ├── index.html                # Main entry point with inline SVG filters
 ├── manifest.json             # PWA manifest with icons + shortcuts
 ├── sw.js                     # Service worker for offline caching
@@ -415,8 +416,8 @@ Contributions are welcome! Please follow these guidelines:
 ### Development Setup
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/LunaEye_v1.git
-cd LunaEye_v1
+git clone https://github.com/yourusername/LunaEye.git
+cd LunaEye
 
 # Start local server
 python -m http.server 8000
@@ -449,8 +450,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📧 Support
 
-- **Issues**: [GitHub Issues](https://github.com/lefyd24/LunaEye_v1/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/lefyd24/LunaEye_v1/discussions)
+- **Issues**: [GitHub Issues](https://github.com/lefyd24/LunaEye/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/lefyd24/LunaEye/discussions)
 - **Email**: fthenosyd@gmail.com
 
 ---
@@ -459,6 +460,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Built with ❤️ using modern web technologies**
 
-[⭐ Star this repo](https://github.com/lefyd24/LunaEye_v1) | [🐛 Report Bug](https://github.com/lefyd24/LunaEye_v1/issues) | [💡 Request Feature](https://github.com/lefyd24/LunaEye_v1/issues)
+[⭐ Star this repo](https://github.com/lefyd24/LunaEye) | [🐛 Report Bug](https://github.com/lefyd24/LunaEye/issues) | [💡 Request Feature](https://github.com/lefyd24/LunaEye/issues)
 
 </div>
