@@ -24,6 +24,13 @@ class VoiceManager {
         this.isInConversation = false;
         this.isSpeaking = false; // Track if TTS is currently speaking
         
+        // Restart queue mechanism to prevent race conditions
+        this.pendingRestart = null;
+        
+        // Echo cancellation fallback for older browsers
+        this.hasAdvancedEchoCancellation = false;
+        this.ttsVolume = 1.0; // Will be reduced on older browsers
+        
         // Audio context for visualization
         this.audioContext = null;
         this.analyser = null;
@@ -42,7 +49,8 @@ class VoiceManager {
             interimResults: true,
             lang: 'en-US',
             maxAlternatives: 3, // More alternatives for better accuracy
-            useLocalDetection: false // Set to true to bypass network issues
+            useLocalDetection: false, // Set to true to bypass network issues
+            debug: true // Enable comprehensive debug logging
         };
         
         // Audio sensitivity settings
@@ -66,6 +74,50 @@ class VoiceManager {
                 console.log('🎙️ Voices already loaded:', voices.length, 'available');
             }
         }
+    }
+    
+    /**
+     * Debug logging utility with category prefixes
+     * Categories: state, recognition, tts, warning, error, interrupt, restart
+     */
+    debugLog(category, message, data = null) {
+        if (!this.config.debug) return;
+        
+        const prefixes = {
+            state: '🔄 [STATE]',
+            recognition: '🎙️ [RECOGNITION]',
+            tts: '🔊 [TTS]',
+            warning: '⚠️ [WARNING]',
+            error: '❌ [ERROR]',
+            interrupt: '🛑 [INTERRUPT]',
+            restart: '♻️ [RESTART]',
+            conversation: '💬 [CONVERSATION]',
+            flags: '🚩 [FLAGS]'
+        };
+        
+        const prefix = prefixes[category] || '📌 [LOG]';
+        const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+        
+        if (data) {
+            console.log(`${timestamp} ${prefix} ${message}`, data);
+        } else {
+            console.log(`${timestamp} ${prefix} ${message}`);
+        }
+    }
+    
+    /**
+     * Log current state of all critical flags
+     */
+    logFlagState(context = '') {
+        this.debugLog('flags', `Flag state ${context}:`, {
+            isListening: this.isListening,
+            isRestarting: this.isRestarting,
+            isPaused: this.isPaused,
+            isSpeaking: this.isSpeaking,
+            isInConversation: this.isInConversation,
+            pendingRestart: !!this.pendingRestart,
+            appState: window.AppState?.getCurrentState()
+        });
     }
     
     async init() {
@@ -102,12 +154,52 @@ class VoiceManager {
                 this.setupEventHandlers();
             }
             
+            // Subscribe to state changes for recognition sync
+            this.setupStateChangeListener();
+            
             console.log('Voice manager initialized successfully');
             
         } catch (error) {
             console.error('Failed to initialize voice manager:', error);
             this.initLocalDetection(); // Fallback to local detection
         }
+    }
+    
+    /**
+     * Subscribe to StateManager changes to ensure recognition is synced with state
+     */
+    setupStateChangeListener() {
+        if (!window.AppState) {
+            this.debugLog('warning', 'AppState not available for state change listener');
+            return;
+        }
+        
+        window.AppState.subscribe('stateChange', async (newState, previousState, context) => {
+            this.debugLog('state', `State changed: ${previousState} -> ${newState}`, context);
+            this.logFlagState('on state change');
+            
+            // When entering LISTENING state, ensure recognition is running
+            if (newState === 'listening') {
+                // Small delay to let other handlers complete
+                await this.delay(150);
+                
+                if (!this.isListening && !this.isRestarting && !this.isPaused && !this.config.useLocalDetection) {
+                    this.debugLog('state', 'Entered LISTENING but recognition not running - forcing restart');
+                    await this.forceRestartRecognition('state-sync-listening');
+                }
+            }
+            
+            // When entering IDLE state from conversation, ensure recognition is ready
+            if (newState === 'idle' && this.isInConversation) {
+                this.isInConversation = false;
+                if (!this.isListening && !this.isRestarting && !this.isPaused && !this.config.useLocalDetection) {
+                    this.debugLog('state', 'Conversation ended, ensuring recognition is running');
+                    this.scheduleRestart(200);
+                }
+            }
+        });
+        
+        this.debugLog('state', 'State change listener registered');
     }
     
     initLocalDetection() {
@@ -205,18 +297,21 @@ class VoiceManager {
     
     // Start wake word detection
     async startWakeWordDetection() {
+        this.debugLog('recognition', 'startWakeWordDetection called');
+        this.logFlagState('startWakeWordDetection entry');
+        
         if (this.isPaused) {
-            console.log('Voice recognition is paused');
+            this.debugLog('recognition', 'Blocked - recognition is paused');
             return;
         }
         
         if (this.isListening) {
-            console.log('Already listening');
+            this.debugLog('recognition', 'Blocked - already listening');
             return;
         }
         
         if (this.isRestarting) {
-            console.log('Restart in progress, waiting...');
+            this.debugLog('recognition', 'Blocked - restart in progress');
             return;
         }
         
@@ -226,8 +321,9 @@ class VoiceManager {
             } else {
                 await this.startWebSpeechDetection();
             }
+            this.debugLog('recognition', 'Wake word detection started successfully');
         } catch (error) {
-            console.error('Failed to start wake word detection:', error);
+            this.debugLog('error', 'Failed to start wake word detection:', error);
             this.consecutiveErrors++;
             
             if (this.consecutiveErrors < 3) {
@@ -235,7 +331,7 @@ class VoiceManager {
                     this.scheduleRestart(3000);
                 }
             } else {
-                console.log('Too many errors, switching to local detection');
+                this.debugLog('warning', 'Too many errors, switching to local detection');
                 this.initLocalDetection();
                 this.startLocalDetection();
             }
@@ -328,10 +424,15 @@ class VoiceManager {
         this.isListening = true;
         this.isRestarting = false;
         this.lastSuccessfulRecognition = Date.now();
-        // Only log when recovering from errors
+        
+        this.debugLog('recognition', 'Recognition started successfully');
+        this.logFlagState('onRecognitionStart');
+        
+        // Reset consecutive errors on successful start
         if (this.consecutiveErrors > 0) {
-            console.log(`✅ Web Speech recognition recovered (was ${this.consecutiveErrors} errors)`);
+            this.debugLog('recognition', `Recovered from ${this.consecutiveErrors} errors`);
         }
+        this.consecutiveErrors = 0;
         
         if (window.UIController) {
             window.UIController.updateAudioStatus(true);
@@ -339,23 +440,40 @@ class VoiceManager {
     }
     
     onRecognitionEnd() {
+        const wasListening = this.isListening;
         this.isListening = false;
         const currentState = window.AppState?.getCurrentState();
+        
+        this.debugLog('recognition', `Recognition ended (wasListening: ${wasListening}, state: ${currentState})`);
+        this.logFlagState('onRecognitionEnd');
         
         if (window.UIController) {
             window.UIController.updateAudioStatus(false);
         }
         
-        // Don't auto-restart here - let error handler or explicit calls handle it
-        // This prevents double-scheduling restarts
-        if (!this.isPaused && !this.config.useLocalDetection && !this.isRestarting) {
-            const shouldRestart = !['error', 'speaking', 'thinking'].includes(currentState);
-            
-            if (shouldRestart) {
-                // Fast restart for listening mode, slightly slower for idle
-                const delay = currentState === 'listening' ? 100 : 500;
-                this.scheduleRestart(delay);
-            }
+        // CRITICAL: Keep recognition alive during SPEAKING for wake word interrupt
+        if (currentState === 'speaking' || this.isSpeaking) {
+            this.debugLog('recognition', 'Recognition stopped during SPEAKING - restarting immediately for wake word detection');
+            this.scheduleRestart(100);
+            return;
+        }
+        
+        // Don't auto-restart if paused or using local detection
+        if (this.isPaused || this.config.useLocalDetection) {
+            this.debugLog('recognition', 'Restart blocked - paused or using local detection');
+            return;
+        }
+        
+        // Determine if we should restart based on current state
+        const shouldRestart = !['error', 'thinking'].includes(currentState);
+        
+        if (shouldRestart) {
+            // Fast restart for listening mode, slightly slower for idle
+            const delay = currentState === 'listening' ? 100 : 500;
+            this.debugLog('recognition', `Scheduling restart (delay: ${delay}ms, state: ${currentState})`);
+            this.scheduleRestart(delay);
+        } else {
+            this.debugLog('recognition', `Restart skipped for state: ${currentState}`);
         }
     }
     
@@ -435,29 +553,42 @@ class VoiceManager {
         // During speaking: ONLY allow wake word detection for interruption
         // With echoCancellation: "all", the TTS audio should be removed from mic input
         if (currentState === 'speaking' || this.isSpeaking) {
+            // Log all speech detected during speaking for debugging
+            this.debugLog('tts', `Speech detected during SPEAKING: "${primaryTranscript}" (final: ${isFinal}, confidence: ${(confidence * 100).toFixed(0)}%)`);
+            
             // Only process final results during speaking
             if (!isFinal) {
+                this.debugLog('tts', 'Ignoring interim result during speaking');
                 return;
             }
             
             // Check if user said wake word to interrupt
-            if (this.detectWakeWord(primaryTranscript)) {
-                console.log('🛑 Wake word detected during speaking - interrupting!');
+            const hasWakeWord = this.detectWakeWord(primaryTranscript);
+            this.debugLog('interrupt', `Wake word check: "${primaryTranscript}" -> ${hasWakeWord}`);
+            
+            if (hasWakeWord) {
+                this.debugLog('interrupt', 'Wake word detected during speaking - interrupting!');
+                this.logFlagState('before wake word interrupt');
+                
                 this.interruptSpeaking();
                 // Extract command if any
                 const command = this.extractCommandFromTranscript(primaryTranscript);
                 if (command && command.length > 2) {
+                    this.debugLog('interrupt', `Found command after wake word: "${command}"`);
                     // Process the new command immediately
                     setTimeout(() => {
                         this.onCommandReceived(command, confidence);
                     }, 300);
                 } else {
+                    this.debugLog('interrupt', 'No command after wake word - going to listening state');
                     // Just interrupted, go to listening state
                     setTimeout(() => {
                         window.AppState?.setState('listening', { source: 'interruption' });
                         this.startListeningTimeout();
                     }, 300);
                 }
+            } else {
+                this.debugLog('tts', `Ignoring non-wake-word speech during speaking: "${primaryTranscript}"`);
             }
             // Ignore all other speech during speaking (likely TTS echo despite cancellation)
             return;
@@ -596,11 +727,26 @@ class VoiceManager {
     startConversationTimeout() {
         this.clearConversationTimeout();
         
-        this.conversationTimeout = setTimeout(() => {
+        this.debugLog('conversation', `Starting conversation timeout (${this.conversationTimeoutDuration}ms)`);
+        
+        this.conversationTimeout = setTimeout(async () => {
             const currentState = window.AppState?.getCurrentState();
+            this.debugLog('conversation', `Conversation timeout fired (state: ${currentState}, isInConversation: ${this.isInConversation})`);
+            this.logFlagState('conversation timeout');
+            
             if (currentState === 'listening' && this.isInConversation) {
-                console.log('⏰ Conversation timeout - returning to idle mode');
+                this.debugLog('conversation', 'Conversation timeout - returning to idle mode');
                 this.isInConversation = false;
+                
+                // Ensure recognition will be running in IDLE state
+                // The state change listener will handle this, but we ensure it here too
+                if (!this.isListening && !this.isRestarting && !this.config.useLocalDetection) {
+                    this.debugLog('conversation', 'Recognition not running at timeout - scheduling restart');
+                    this.scheduleRestart(100);
+                }
+                
+                // Transition to idle AFTER ensuring recognition restart is scheduled
+                await this.delay(50);
                 window.AppState?.setState('idle');
                 
                 // Optional: Provide audio feedback
@@ -678,14 +824,23 @@ class VoiceManager {
                 // Speech completed naturally (not interrupted)
                 this.isSpeaking = false;
                 
+                this.debugLog('conversation', 'TTS completed naturally - transitioning to LISTENING');
+                
                 // Go back to LISTENING (not idle) to continue the conversation
                 window.AppState?.setState('listening', { source: 'conversation-continue' });
+                
+                // CRITICAL: Ensure recognition is running after TTS
+                await this.delay(200); // Small delay for state transition to complete
+                if (!this.isListening && !this.isRestarting && !this.config.useLocalDetection) {
+                    this.debugLog('conversation', 'Recognition not running after TTS - forcing restart');
+                    await this.forceRestartRecognition('post-tts-conversation');
+                }
                 
                 // Start conversation timeout
                 this.startConversationTimeout();
             } else {
                 // Was interrupted - isSpeaking was set to false by interruptSpeaking()
-                console.log('✅ Speech was interrupted by user');
+                this.debugLog('conversation', 'Speech was interrupted by user');
             }
             
             // Reset speaking flag just in case
@@ -851,26 +1006,66 @@ class VoiceManager {
         }
     }
     
-    // Schedule restart with delay
+    // Schedule restart with delay - uses queue to prevent race conditions
     scheduleRestart(delay = this.restartDelay) {
-        if (this.isRestarting || this.isPaused) {
+        // Cancel any pending restart first
+        if (this.pendingRestart) {
+            clearTimeout(this.pendingRestart);
+            this.pendingRestart = null;
+            this.debugLog('restart', 'Cancelled pending restart - scheduling new one');
+        }
+        
+        if (this.isPaused) {
+            this.debugLog('restart', 'Restart blocked - recognition is paused');
             return;
         }
         
-        this.isRestarting = true;
         this.restartAttempts++;
+        this.debugLog('restart', `Scheduling restart in ${delay}ms (attempt ${this.restartAttempts})`);
+        this.logFlagState('before scheduled restart');
         
-        // Only log if there have been multiple attempts (potential issue)
-        if (this.restartAttempts > 3) {
-            console.log(`Recognition restart attempt ${this.restartAttempts}`);
+        this.pendingRestart = setTimeout(async () => {
+            this.pendingRestart = null;
+            this.isRestarting = false; // Ensure flag is reset
+            
+            if (this.isPaused) {
+                this.debugLog('restart', 'Restart cancelled - recognition paused during wait');
+                return;
+            }
+            
+            if (this.isListening) {
+                this.debugLog('restart', 'Restart skipped - already listening');
+                return;
+            }
+            
+            this.debugLog('restart', 'Executing scheduled restart now');
+            await this.startWakeWordDetection();
+        }, delay);
+    }
+    
+    /**
+     * Force restart recognition - bypasses guards for critical situations
+     */
+    async forceRestartRecognition(reason = 'unknown') {
+        this.debugLog('restart', `Force restart triggered: ${reason}`);
+        this.logFlagState('before force restart');
+        
+        // Cancel any pending restart
+        if (this.pendingRestart) {
+            clearTimeout(this.pendingRestart);
+            this.pendingRestart = null;
         }
         
-        setTimeout(() => {
-            this.isRestarting = false;
-            if (!this.isPaused && !this.isListening) {
-                this.startWakeWordDetection();
-            }
-        }, delay);
+        // Reset all blocking flags
+        this.isListening = false;
+        this.isRestarting = false;
+        
+        // Small delay to ensure clean state
+        await this.delay(100);
+        
+        // Start fresh
+        await this.startWakeWordDetection();
+        this.logFlagState('after force restart');
     }
     
     // Process command with fallback responses
@@ -884,12 +1079,37 @@ class VoiceManager {
                 if (window.LunaAPI.isConnected) {
                     // WebSocket mode - response comes via callback
                     return new Promise((resolve, reject) => {
-                        // Set up response handler
-                        const originalHandler = window.LunaAPI.onResponse;
+                        let timeoutId = null;
+                        let isResolved = false;
+                        let toolInProgress = false;
                         
-                        window.LunaAPI.onResponse = (response) => {
-                            // Restore original handler
+                        // Store original handlers
+                        const originalHandler = window.LunaAPI.onResponse;
+                        const originalErrorHandler = window.LunaAPI.onError;
+                        const originalToolStartHandler = window.LunaAPI.onToolStart;
+                        
+                        // Helper to cleanup and resolve
+                        const cleanup = () => {
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                                timeoutId = null;
+                            }
                             window.LunaAPI.onResponse = originalHandler;
+                            window.LunaAPI.onError = originalErrorHandler;
+                            window.LunaAPI.onToolStart = originalToolStartHandler;
+                        };
+                        
+                        // Set up response handler
+                        window.LunaAPI.onResponse = (response) => {
+                            if (isResolved) {
+                                // Response came after timeout - still speak it!
+                                console.log('Late API response received, triggering speech:', response.text?.substring(0, 50) + '...');
+                                this.handleLateResponse(response);
+                                return;
+                            }
+                            
+                            isResolved = true;
+                            cleanup();
                             
                             resolve({
                                 text: response.text,
@@ -899,23 +1119,53 @@ class VoiceManager {
                         };
                         
                         // Set up error handler
-                        const originalErrorHandler = window.LunaAPI.onError;
                         window.LunaAPI.onError = (error) => {
-                            window.LunaAPI.onError = originalErrorHandler;
+                            if (isResolved) return;
+                            
+                            isResolved = true;
+                            cleanup();
+                            
                             console.warn('API error, using fallback:', error);
                             resolve(this.getLocalResponse(command));
+                        };
+                        
+                        // Set up tool start handler - extend timeout when tools are used
+                        window.LunaAPI.onToolStart = (toolName, args) => {
+                            toolInProgress = true;
+                            
+                            // Call original handler if it exists
+                            if (originalToolStartHandler) {
+                                originalToolStartHandler(toolName, args);
+                            }
+                            
+                            // Extend the timeout when a tool starts (tools can take longer)
+                            if (timeoutId && !isResolved) {
+                                clearTimeout(timeoutId);
+                                console.log('Tool started, extending timeout to 60s:', toolName);
+                                timeoutId = setTimeout(() => {
+                                    if (!isResolved) {
+                                        isResolved = true;
+                                        cleanup();
+                                        console.warn('API timeout (with tool), using fallback');
+                                        resolve(this.getLocalResponse(command));
+                                    }
+                                }, 60000); // 60 second timeout for tool operations
+                            }
                         };
                         
                         // Send the message
                         window.LunaAPI.sendMessage(command);
                         
-                        // Timeout fallback
-                        setTimeout(() => {
-                            if (window.LunaAPI.onResponse !== originalHandler) {
-                                window.LunaAPI.onResponse = originalHandler;
-                                window.LunaAPI.onError = originalErrorHandler;
+                        // Initial timeout fallback (15 seconds for simple responses)
+                        timeoutId = setTimeout(() => {
+                            if (!isResolved && !toolInProgress) {
+                                isResolved = true;
+                                cleanup();
                                 console.warn('API timeout, using fallback');
                                 resolve(this.getLocalResponse(command));
+                            } else if (!isResolved && toolInProgress) {
+                                // Tool in progress, don't timeout yet
+                                console.log('Timeout reached but tool in progress, waiting...');
                             }
                         }, 15000);
                     });
@@ -936,6 +1186,32 @@ class VoiceManager {
         
         // Fallback to local responses
         return this.getLocalResponse(command);
+    }
+    
+    // Handle late API responses that arrived after timeout
+    async handleLateResponse(response) {
+        if (!response.text) return;
+        
+        // If we're stuck in speaking state without actual speech, speak the response
+        const currentState = window.AppState?.getCurrentState();
+        
+        // Add response to UI
+        if (window.UIController) {
+            window.UIController.showResponse(response.text);
+        }
+        
+        // Speak the response
+        this.isSpeaking = true;
+        await this.speak(response.text);
+        this.isSpeaking = false;
+        
+        // Return to listening for conversation
+        if (this.isInConversation) {
+            window.AppState?.setState('listening', { source: 'late-response-continue' });
+            this.startConversationTimeout();
+        } else {
+            window.AppState?.setState('idle', { source: 'late-response-complete' });
+        }
     }
     
     // Local fallback responses when API is unavailable
@@ -1003,7 +1279,7 @@ class VoiceManager {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
-                utterance.volume = 1.0;
+                utterance.volume = this.ttsVolume; // Dynamic volume based on echo cancellation support
                 utterance.lang = 'en-US';
                 
                 const voices = this.synthesis.getVoices();
@@ -1088,7 +1364,8 @@ class VoiceManager {
     
     // Interrupt speaking (called when user taps mic button during speaking)
     async interruptSpeaking() {
-        console.log('🛑 Interrupting speech synthesis...');
+        this.debugLog('interrupt', 'Interrupting speech synthesis...');
+        this.logFlagState('before interrupt');
         
         // Cancel any ongoing speech
         if (this.synthesis) {
@@ -1115,15 +1392,31 @@ class VoiceManager {
         // Wait a moment for audio to fully stop before resuming recognition
         await this.delay(300);
         
-        // Resume recognition now that speaking has stopped
+        // CRITICAL: Force restart recognition - bypass all guards
+        // Cancel any pending restart first
+        if (this.pendingRestart) {
+            clearTimeout(this.pendingRestart);
+            this.pendingRestart = null;
+        }
+        
+        // Force-reset flags that might block restart
+        this.isListening = false;
+        this.isRestarting = false;
+        this.isPaused = false;
+        
+        this.debugLog('interrupt', 'Flags reset, starting wake word detection directly');
+        this.logFlagState('after interrupt flag reset');
+        
+        // Directly start recognition (not via resumeWakeWordDetection which has extra guards)
         if (!this.config.useLocalDetection) {
-            this.resumeWakeWordDetection();
+            await this.startWakeWordDetection();
         }
         
         // Start conversation timeout
         this.startConversationTimeout();
         
-        console.log('✅ Speech interrupted - now in listening mode');
+        this.debugLog('interrupt', 'Speech interrupted - now in listening mode');
+        this.logFlagState('after interrupt complete');
     }
     
     // Audio visualization for Web Speech API

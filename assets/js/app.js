@@ -9,7 +9,7 @@ class LunaEyeApp {
         this.config = {
             name: 'LunaEye',
             version: '2.0.0',
-            apiEndpoint: 'http://100.101.185.10:8000',
+            apiEndpoint: 'http://localhost:8000',  // Change to your backend URL
             wakeWord: 'Hey Luna',
             autoStart: true,
             autoConnectApi: true,
@@ -161,7 +161,28 @@ class LunaEyeApp {
         
         window.LunaAPI.onResponse = (response) => {
             console.log('API response received:', response);
-            // Response handling is done in voice.js processCommand
+            
+            // Check if we're stuck in speaking/thinking state without actual speech
+            // This handles late responses that came after the timeout in voice.js
+            const currentState = window.AppState?.getCurrentState();
+            const voiceStatus = window.VoiceManager?.getStatus();
+            
+            if ((currentState === 'speaking' || currentState === 'thinking') && 
+                !voiceStatus?.isSpeaking && 
+                response.text) {
+                console.log('Late response detected - triggering speech');
+                
+                // Show response in UI
+                if (window.UIController) {
+                    window.UIController.showResponse(response.text);
+                }
+                
+                // Trigger TTS for the response
+                if (window.VoiceManager) {
+                    window.VoiceManager.handleLateResponse(response);
+                }
+            }
+            // Normal case: response handling is done in voice.js processCommand
         };
         
         window.LunaAPI.onToolStart = (toolName, args) => {

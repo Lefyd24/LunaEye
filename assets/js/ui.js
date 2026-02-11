@@ -1,4 +1,6 @@
 // LunaEye UI Controller - Manages interface updates and interactions
+// Enhanced with audio sync bridge between visualizers
+
 class UIController {
     constructor() {
         this.elements = {};
@@ -11,6 +13,12 @@ class UIController {
         this.chatHistory = []; // Store chat messages
         this.maxMessages = 4; // Show last 4 messages (2 user + 2 agent)
         this.isTranscribing = false; // Track if we're in the middle of transcribing
+        
+        // Audio sync bridge
+        this.audioSyncActive = false;
+        this.audioSyncAnimationId = null;
+        this.lastAudioSyncTime = 0;
+        this.audioSyncThrottleMs = 16; // ~60fps max update rate
         
         this.init();
     }
@@ -31,8 +39,9 @@ class UIController {
         this.setupStateListeners();
         this.checkInstallPrompt();
         this.loadApiSettings();
+        this.initAudioSyncBridge();
         
-        console.log('UI Controller initialized');
+        console.log('🎨 UI Controller initialized with audio sync bridge');
     }
     
     cacheElements() {
@@ -177,14 +186,32 @@ class UIController {
         // Update audio indicator
         this.updateAudioIndicator(state);
         
-        // Update fluid simulation
+        // Update fluid simulation with transition timing
         if (this.fluidSimulation) {
             this.fluidSimulation.setState(state);
+            
+            // Sync audio level from voice visualizer
+            if (window.voiceVisualizer) {
+                this.fluidSimulation.setAudioLevel(window.voiceVisualizer.globalLevel || 0);
+            }
         }
         
         // Update liquid visualizer state
         if (window.voiceVisualizer && window.voiceVisualizer.setState) {
             window.voiceVisualizer.setState(state);
+        }
+        
+        // Start or stop audio sync based on state
+        const audioActiveStates = ['listening', 'speaking', 'waking'];
+        if (audioActiveStates.includes(state)) {
+            this.startAudioSync();
+        } else if (state === 'idle') {
+            // Keep sync running briefly for smooth transition
+            setTimeout(() => {
+                if (window.AppState?.getCurrentState() === 'idle') {
+                    this.stopAudioSync();
+                }
+            }, 2000);
         }
         
         // Handle state-specific UI updates
@@ -212,6 +239,71 @@ class UIController {
                     this.addAgentMessage('Error: ' + context.error);
                 }
                 break;
+        }
+    }
+    
+    // Initialize audio sync bridge between voice visualizer and fluid simulation
+    initAudioSyncBridge() {
+        // Wait for visualizers to be ready
+        setTimeout(() => {
+            if (window.voiceVisualizer && this.fluidSimulation) {
+                console.log('🔊 Audio sync bridge ready');
+            }
+        }, 1000);
+    }
+    
+    // Start syncing audio data between visualizers
+    startAudioSync() {
+        if (this.audioSyncActive) return;
+        
+        this.audioSyncActive = true;
+        console.log('🔊 Audio sync started');
+        
+        const syncLoop = (currentTime) => {
+            if (!this.audioSyncActive) return;
+            
+            this.audioSyncAnimationId = requestAnimationFrame(syncLoop);
+            
+            // Throttle updates to 60fps max
+            if (currentTime - this.lastAudioSyncTime < this.audioSyncThrottleMs) return;
+            this.lastAudioSyncTime = currentTime;
+            
+            this.syncAudioToVisualizers();
+        };
+        
+        this.audioSyncAnimationId = requestAnimationFrame(syncLoop);
+    }
+    
+    // Stop audio sync
+    stopAudioSync() {
+        if (!this.audioSyncActive) return;
+        
+        this.audioSyncActive = false;
+        if (this.audioSyncAnimationId) {
+            cancelAnimationFrame(this.audioSyncAnimationId);
+            this.audioSyncAnimationId = null;
+        }
+        console.log('🔇 Audio sync stopped');
+    }
+    
+    // Sync audio data between voice visualizer and fluid simulation
+    syncAudioToVisualizers() {
+        if (!window.voiceVisualizer || !this.fluidSimulation) return;
+        
+        // Get audio level from voice visualizer
+        const audioLevel = window.voiceVisualizer.globalLevel || 0;
+        const peakLevel = window.voiceVisualizer.peakLevel || audioLevel;
+        
+        // Update fluid simulation with audio data
+        this.fluidSimulation.setAudioLevel(audioLevel);
+        
+        // If fluid simulation supports peak level, set it
+        if (this.fluidSimulation.peakAudioLevel !== undefined) {
+            // Blend with existing peak tracking
+            this.fluidSimulation.peakAudioLevel = Math.max(
+                this.fluidSimulation.peakAudioLevel * 0.95,
+                peakLevel
+            );
         }
     }
     
@@ -553,7 +645,7 @@ class UIController {
         }
         
         // Update config from inputs
-        const url = this.elements.apiUrlInput?.value || 'http://100.101.185.10';
+        const url = this.elements.apiUrlInput?.value || 'http://localhost:8000';
         const port = parseInt(this.elements.apiPortInput?.value) || 8000;
         const useWs = this.elements.useWebSocketToggle?.checked ?? true;
         
@@ -626,7 +718,7 @@ class UIController {
             const config = window.LunaAPI.getConfig();
             
             if (this.elements.apiUrlInput) {
-                this.elements.apiUrlInput.value = config.baseUrl || 'http://100.101.185.10';
+                this.elements.apiUrlInput.value = config.baseUrl || 'http://localhost:8000';
             }
             if (this.elements.apiPortInput) {
                 this.elements.apiPortInput.value = config.port || 8000;

@@ -236,33 +236,71 @@
     }
 }
 
-/* Glow Ring State Colors */
+/* Glow Ring State Colors - Enhanced with 50% more intensity */
 .state-listening #glow-ring-1,
 .state-listening #glow-ring-2,
 .state-listening #glow-ring-3 {
-    border-color: rgba(6, 182, 212, 0.4);
-    box-shadow: 0 0 40px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 
+        0 0 60px rgba(6, 182, 212, 0.45),
+        0 0 100px rgba(6, 182, 212, 0.25),
+        inset 0 0 60px rgba(6, 182, 212, 0.15);
+    transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .state-thinking #glow-ring-1,
 .state-thinking #glow-ring-2,
 .state-thinking #glow-ring-3 {
-    border-color: rgba(245, 158, 11, 0.4);
-    box-shadow: 0 0 40px rgba(245, 158, 11, 0.3), inset 0 0 40px rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 
+        0 0 60px rgba(245, 158, 11, 0.45),
+        0 0 100px rgba(245, 158, 11, 0.25),
+        inset 0 0 60px rgba(245, 158, 11, 0.15);
+    transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .state-speaking #glow-ring-1,
 .state-speaking #glow-ring-2,
 .state-speaking #glow-ring-3 {
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.3), inset 0 0 40px rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 
+        0 0 60px rgba(16, 185, 129, 0.45),
+        0 0 100px rgba(16, 185, 129, 0.25),
+        inset 0 0 60px rgba(16, 185, 129, 0.15);
+    transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .state-waking #glow-ring-1,
 .state-waking #glow-ring-2,
 .state-waking #glow-ring-3 {
-    border-color: rgba(236, 72, 153, 0.4);
-    box-shadow: 0 0 40px rgba(236, 72, 153, 0.3), inset 0 0 40px rgba(236, 72, 153, 0.1);
+    border-color: rgba(236, 72, 153, 0.5);
+    box-shadow: 
+        0 0 60px rgba(236, 72, 153, 0.45),
+        0 0 100px rgba(236, 72, 153, 0.25),
+        inset 0 0 60px rgba(236, 72, 153, 0.15);
+    transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.state-error #glow-ring-1,
+.state-error #glow-ring-2,
+.state-error #glow-ring-3 {
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 
+        0 0 60px rgba(239, 68, 68, 0.45),
+        0 0 100px rgba(239, 68, 68, 0.25),
+        inset 0 0 60px rgba(239, 68, 68, 0.15);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.state-idle #glow-ring-1,
+.state-idle #glow-ring-2,
+.state-idle #glow-ring-3 {
+    border-color: rgba(6, 182, 212, 0.3);
+    box-shadow: 
+        0 0 40px rgba(6, 182, 212, 0.2),
+        0 0 70px rgba(6, 182, 212, 0.1),
+        inset 0 0 40px rgba(6, 182, 212, 0.05);
+    transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Slider Styling */
@@ -386,6 +424,26 @@ input:focus-visible {
 .glass-panel {
     will-change: transform, opacity;
     transform: translateZ(0);
+}
+
+/* AI Entity Container - GPU Isolation for smooth animations */
+.ai-entity {
+    contain: layout style paint;
+    will-change: transform;
+}
+
+/* Voice Circle - Enhanced with gooey filter reference */
+.voice-circle {
+    contain: layout style paint;
+    will-change: transform, filter;
+    filter: url('#gooey-filter');
+    transform: translateZ(0);
+}
+
+/* Content Visibility for off-screen elements */
+.off-screen-optimize {
+    content-visibility: auto;
+    contain-intrinsic-size: 300px 300px;
 }
 
 /* Custom Scrollbar */

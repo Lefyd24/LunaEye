@@ -290,6 +290,9 @@
             justify-content: center;
             overflow: visible;
             border-radius: 50%;
+            /* GPU isolation for smooth animations */
+            contain: layout style paint;
+            will-change: transform, filter;
         }
         
         .voice-circle {
@@ -301,6 +304,10 @@
             justify-content: center;
             border-radius: 50%;
             overflow: hidden;
+            /* Apply gooey filter for liquid blob blending */
+            filter: url('#gooey-filter');
+            /* Smooth color transitions */
+            transition: filter 2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         /* Canvas styling for Siri orb */
@@ -311,91 +318,105 @@
             border-radius: 50%;
         }
         
-        /* Idle State - Subtle ambient glow */
+        /* Idle State - Subtle ambient glow with breathing */
         body[data-state="idle"] .ai-entity {
             filter: drop-shadow(0 0 30px rgba(100, 150, 255, 0.4)) 
-                    drop-shadow(0 0 60px rgba(150, 100, 255, 0.2));
+                    drop-shadow(0 0 60px rgba(150, 100, 255, 0.2))
+                    drop-shadow(0 0 100px rgba(100, 150, 255, 0.1));
             animation: siriIdle 6s ease-in-out infinite;
         }
         
-        /* Listening - Active multi-color glow */
+        /* Listening - Active multi-color glow with enhanced intensity */
         body[data-state="listening"] .ai-entity {
-            filter: drop-shadow(0 0 40px rgba(0, 200, 255, 0.5)) 
-                    drop-shadow(0 0 80px rgba(0, 150, 200, 0.3));
+            filter: drop-shadow(0 0 50px rgba(0, 200, 255, 0.6)) 
+                    drop-shadow(0 0 100px rgba(0, 150, 200, 0.4))
+                    drop-shadow(0 0 150px rgba(0, 200, 255, 0.2));
             animation: siriListening 2s ease-in-out infinite;
         }
         
-        /* Thinking - Warm processing glow */
+        /* Thinking - Warm processing glow with rotation */
         body[data-state="thinking"] .ai-entity {
-            filter: drop-shadow(0 0 45px rgba(255, 180, 50, 0.5)) 
-                    drop-shadow(0 0 90px rgba(255, 150, 30, 0.3));
-            animation: siriThinking 1.2s ease-in-out infinite;
+            filter: drop-shadow(0 0 55px rgba(255, 180, 50, 0.6)) 
+                    drop-shadow(0 0 110px rgba(255, 150, 30, 0.4))
+                    drop-shadow(0 0 170px rgba(255, 180, 50, 0.2));
+            animation: siriThinking 1.5s ease-in-out infinite;
         }
         
-        /* Speaking - Vibrant response glow */
+        /* Speaking - Vibrant response glow with pulse */
         body[data-state="speaking"] .ai-entity {
-            filter: drop-shadow(0 0 50px rgba(50, 220, 150, 0.5)) 
-                    drop-shadow(0 0 100px rgba(30, 180, 120, 0.3));
-            animation: siriSpeaking 0.6s ease-in-out infinite;
+            filter: drop-shadow(0 0 60px rgba(50, 220, 150, 0.6)) 
+                    drop-shadow(0 0 120px rgba(30, 180, 120, 0.4))
+                    drop-shadow(0 0 180px rgba(50, 220, 150, 0.2));
+            animation: siriSpeaking 0.8s ease-in-out infinite;
         }
         
-        /* Waking - Energized startup glow */
+        /* Waking - Energized startup glow with burst */
         body[data-state="waking"] .ai-entity {
-            filter: drop-shadow(0 0 60px rgba(180, 100, 255, 0.6)) 
-                    drop-shadow(0 0 120px rgba(150, 50, 255, 0.3));
-            animation: siriWaking 0.8s ease-in-out infinite;
+            filter: drop-shadow(0 0 70px rgba(180, 100, 255, 0.7)) 
+                    drop-shadow(0 0 140px rgba(150, 50, 255, 0.4))
+                    drop-shadow(0 0 200px rgba(180, 100, 255, 0.2));
+            animation: siriWaking 0.6s ease-in-out infinite;
         }
         
-        /* Error - Alert glow */
+        /* Error - Alert glow with shake */
         body[data-state="error"] .ai-entity {
-            filter: drop-shadow(0 0 40px rgba(255, 80, 80, 0.6)) 
-                    drop-shadow(0 0 80px rgba(255, 50, 50, 0.3));
-            animation: siriError 0.4s ease-in-out infinite;
+            filter: drop-shadow(0 0 50px rgba(255, 80, 80, 0.7)) 
+                    drop-shadow(0 0 100px rgba(255, 50, 50, 0.4))
+                    drop-shadow(0 0 150px rgba(255, 80, 80, 0.2));
+            animation: siriError 0.3s ease-in-out infinite;
         }
         
         @keyframes siriIdle {
             0%, 100% { 
                 filter: drop-shadow(0 0 30px rgba(100, 150, 255, 0.4)) 
-                        drop-shadow(0 0 60px rgba(150, 100, 255, 0.2));
+                        drop-shadow(0 0 60px rgba(150, 100, 255, 0.2))
+                        drop-shadow(0 0 100px rgba(100, 150, 255, 0.1));
                 transform: scale(1);
             }
             50% { 
-                filter: drop-shadow(0 0 40px rgba(120, 170, 255, 0.5)) 
-                        drop-shadow(0 0 80px rgba(170, 120, 255, 0.25));
-                transform: scale(1.02);
+                filter: drop-shadow(0 0 45px rgba(120, 170, 255, 0.5)) 
+                        drop-shadow(0 0 90px rgba(170, 120, 255, 0.3))
+                        drop-shadow(0 0 130px rgba(120, 170, 255, 0.15));
+                transform: scale(1.025);
             }
         }
         
         @keyframes siriListening {
             0%, 100% { 
-                filter: drop-shadow(0 0 40px rgba(0, 200, 255, 0.5)) 
-                        drop-shadow(0 0 80px rgba(0, 150, 200, 0.3));
+                filter: drop-shadow(0 0 50px rgba(0, 200, 255, 0.6)) 
+                        drop-shadow(0 0 100px rgba(0, 150, 200, 0.4))
+                        drop-shadow(0 0 150px rgba(0, 200, 255, 0.2));
                 transform: scale(1);
             }
             50% { 
-                filter: drop-shadow(0 0 55px rgba(0, 220, 255, 0.6)) 
-                        drop-shadow(0 0 100px rgba(0, 170, 220, 0.35));
-                transform: scale(1.03);
+                filter: drop-shadow(0 0 70px rgba(0, 220, 255, 0.7)) 
+                        drop-shadow(0 0 130px rgba(0, 170, 220, 0.45))
+                        drop-shadow(0 0 180px rgba(0, 220, 255, 0.25));
+                transform: scale(1.04);
             }
         }
         
         @keyframes siriThinking {
             0%, 100% { 
-                filter: drop-shadow(0 0 45px rgba(255, 180, 50, 0.5)) 
-                        drop-shadow(0 0 90px rgba(255, 150, 30, 0.3));
+                filter: drop-shadow(0 0 55px rgba(255, 180, 50, 0.6)) 
+                        drop-shadow(0 0 110px rgba(255, 150, 30, 0.4))
+                        drop-shadow(0 0 170px rgba(255, 180, 50, 0.2));
                 transform: scale(1) rotate(0deg);
             }
             50% { 
-                filter: drop-shadow(0 0 60px rgba(255, 200, 70, 0.6)) 
-                        drop-shadow(0 0 110px rgba(255, 170, 50, 0.35));
-                transform: scale(1.04) rotate(2deg);
+                filter: drop-shadow(0 0 75px rgba(255, 200, 70, 0.7)) 
+                        drop-shadow(0 0 140px rgba(255, 170, 50, 0.45))
+                        drop-shadow(0 0 200px rgba(255, 200, 70, 0.25));
+                transform: scale(1.05) rotate(3deg);
             }
         }
         
         @keyframes siriSpeaking {
             0%, 100% { 
-                filter: drop-shadow(0 0 50px rgba(50, 220, 150, 0.5)) 
-                        drop-shadow(0 0 100px rgba(30, 180, 120, 0.3));
+                filter: drop-shadow(0 0 60px rgba(50, 220, 150, 0.6)) 
+                        drop-shadow(0 0 120px rgba(30, 180, 120, 0.4))
+                        drop-shadow(0 0 180px rgba(50, 220, 150, 0.2));
+                transform: scale(1);
             }
             50% { 
                 filter: drop-shadow(0 0 65px rgba(70, 240, 170, 0.6)) 
@@ -1140,6 +1161,54 @@
     </style>
 </head>
 <body data-state="idle">
+    <!-- SVG Filters for Liquid/Gooey Effects -->
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <defs>
+            <!-- Gooey filter for liquid blob blending effect -->
+            <filter id="gooey-filter" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="
+                    1 0 0 0 0
+                    0 1 0 0 0
+                    0 0 1 0 0
+                    0 0 0 20 -10" result="gooey" />
+                <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
+            </filter>
+            
+            <!-- Soft glow filter for ambient effects -->
+            <filter id="soft-glow" x="-100%" y="-100%" width="300%" height="300%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur2" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="24" result="blur3" />
+                <feMerge>
+                    <feMergeNode in="blur3" />
+                    <feMergeNode in="blur2" />
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                </feMerge>
+            </filter>
+            
+            <!-- Holographic shimmer gradient -->
+            <linearGradient id="holographic-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color: rgba(0, 255, 255, 0.3)">
+                    <animate attributeName="stop-color" 
+                             values="rgba(0, 255, 255, 0.3); rgba(255, 0, 255, 0.3); rgba(0, 255, 255, 0.3)" 
+                             dur="4s" repeatCount="indefinite" />
+                </stop>
+                <stop offset="50%" style="stop-color: rgba(255, 0, 255, 0.3)">
+                    <animate attributeName="stop-color" 
+                             values="rgba(255, 0, 255, 0.3); rgba(0, 255, 255, 0.3); rgba(255, 0, 255, 0.3)" 
+                             dur="4s" repeatCount="indefinite" />
+                </stop>
+                <stop offset="100%" style="stop-color: rgba(0, 255, 255, 0.3)">
+                    <animate attributeName="stop-color" 
+                             values="rgba(0, 255, 255, 0.3); rgba(255, 0, 255, 0.3); rgba(0, 255, 255, 0.3)" 
+                             dur="4s" repeatCount="indefinite" />
+                </stop>
+            </linearGradient>
+        </defs>
+    </svg>
+    
     <!-- Fluid Simulation Background -->
     <div id="fluid-container"></div>
     
@@ -1257,8 +1326,8 @@
                         <input type="text" 
                                class="settings-input" 
                                id="api-url-input" 
-                               placeholder="http://100.101.185.10"
-                               value="http://100.101.185.10"
+                               placeholder="http://localhost"
+                               value="http://localhost"
                                style="width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 0.5rem; color: #fff; font-family: var(--font-body); font-size: 0.9rem;">
                     </div>
                     <div class="settings-item">

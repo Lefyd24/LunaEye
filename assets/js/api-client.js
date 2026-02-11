@@ -3,8 +3,8 @@ class LunaAPIClient {
     constructor() {
         // Default API configuration
         this.config = {
-            baseUrl: 'http://100.101.185.10',
-            port: 8823,
+            baseUrl: 'http://localhost',  // Change to your backend URL
+            port: 8000,
             useWebSocket: true,
             reconnectInterval: 3000,
             maxReconnectAttempts: 5

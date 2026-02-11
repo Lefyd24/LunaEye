@@ -1,6 +1,197 @@
 /* LunaEye Futuristic Animations */
+/* Enhanced with Siri-like liquid blob morphing effects */
 
-/* Rotating Ring Animations */
+/* ============================================
+   BLOB MORPHING ANIMATIONS
+============================================ */
+
+/* Organic blob shape morphing - simulates liquid blob with CSS border-radius */
+@keyframes blob-morph {
+    0%, 100% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        transform: rotate(0deg) scale(1);
+    }
+    25% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+        transform: rotate(90deg) scale(1.02);
+    }
+    50% {
+        border-radius: 50% 60% 30% 60% / 30% 40% 70% 50%;
+        transform: rotate(180deg) scale(1);
+    }
+    75% {
+        border-radius: 40% 30% 60% 50% / 70% 50% 40% 60%;
+        transform: rotate(270deg) scale(1.02);
+    }
+}
+
+/* Slower, more organic blob morph variant */
+@keyframes blob-morph-slow {
+    0%, 100% {
+        border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+    }
+    20% {
+        border-radius: 55% 45% 30% 70% / 65% 35% 55% 45%;
+    }
+    40% {
+        border-radius: 30% 70% 55% 45% / 40% 60% 40% 60%;
+    }
+    60% {
+        border-radius: 70% 30% 45% 55% / 55% 45% 65% 35%;
+    }
+    80% {
+        border-radius: 45% 55% 60% 40% / 35% 65% 35% 65%;
+    }
+}
+
+/* Fast blob morph for active states */
+@keyframes blob-morph-fast {
+    0%, 100% {
+        border-radius: 50% 50% 40% 60% / 60% 40% 50% 50%;
+        transform: scale(1);
+    }
+    33% {
+        border-radius: 40% 60% 50% 50% / 50% 50% 60% 40%;
+        transform: scale(1.03);
+    }
+    66% {
+        border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%;
+        transform: scale(0.98);
+    }
+}
+
+/* ============================================
+   GRADIENT FLOW ANIMATIONS
+============================================ */
+
+/* Flowing gradient animation - liquid color mixing effect */
+@keyframes gradient-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+    25% {
+        background-position: 50% 0%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    75% {
+        background-position: 50% 100%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Swirling gradient for thinking state */
+@keyframes gradient-swirl {
+    0% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        background-position: 100% 50%;
+        filter: hue-rotate(15deg);
+    }
+    100% {
+        background-position: 0% 50%;
+        filter: hue-rotate(0deg);
+    }
+}
+
+/* Holographic shimmer effect */
+@keyframes holographic-flow {
+    0% {
+        background-position: -200% center;
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        background-position: 200% center;
+        opacity: 0.5;
+    }
+}
+
+/* ============================================
+   AUDIO RIPPLE ANIMATIONS
+============================================ */
+
+/* Ripple expanding outward from orb */
+@keyframes audio-ripple {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+        border-width: 3px;
+    }
+    50% {
+        opacity: 0.4;
+        border-width: 2px;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+        border-width: 1px;
+    }
+}
+
+/* Multiple ripple layers for depth */
+@keyframes audio-ripple-delayed {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+}
+
+/* Voice reactive pulse */
+@keyframes voice-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 30px currentColor;
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 60px currentColor, 0 0 100px currentColor;
+    }
+}
+
+/* ============================================
+   BREATHING ANIMATIONS
+============================================ */
+
+/* Subtle idle breathing animation */
+@keyframes gentle-breathe {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.03);
+        opacity: 1;
+    }
+}
+
+/* Deep breathing for waking state */
+@keyframes deep-breathe {
+    0%, 100% {
+        transform: scale(0.95);
+        filter: brightness(0.9);
+    }
+    50% {
+        transform: scale(1.05);
+        filter: brightness(1.1);
+    }
+}
+
+/* ============================================
+   ROTATING RING ANIMATIONS (Original)
+============================================ */
+
 @keyframes spin-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -115,57 +306,96 @@
 /* State-specific animations */
 .state-idle #energy-core {
     filter: saturate(0.7) brightness(0.8);
+    animation: gentle-breathe 4s ease-in-out infinite;
 }
 
 .state-listening #energy-core {
     filter: saturate(1.5) brightness(1.2) hue-rotate(-30deg);
-    animation: listening-glow 1s ease-in-out infinite;
+    animation: listening-glow 1.2s ease-in-out infinite, blob-morph-fast 3s ease-in-out infinite;
 }
 
 @keyframes listening-glow {
     0%, 100% {
         filter: saturate(1.5) brightness(1.2) hue-rotate(-30deg);
+        box-shadow: 0 0 40px rgba(6, 182, 212, 0.5);
     }
     50% {
         filter: saturate(2) brightness(1.5) hue-rotate(-20deg);
+        box-shadow: 0 0 80px rgba(6, 182, 212, 0.8), 0 0 120px rgba(6, 182, 212, 0.4);
     }
 }
 
 .state-thinking #energy-core {
     filter: saturate(1.3) brightness(1.1) hue-rotate(30deg);
-    animation: thinking-pulse 1.5s ease-in-out infinite;
+    animation: thinking-pulse 2s ease-in-out infinite, blob-morph-slow 8s ease-in-out infinite;
 }
 
 @keyframes thinking-pulse {
     0%, 100% {
         transform: scale(1);
+        box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
     }
     50% {
         transform: scale(1.05);
+        box-shadow: 0 0 70px rgba(245, 158, 11, 0.6), 0 0 100px rgba(245, 158, 11, 0.3);
     }
 }
 
 .state-speaking #energy-core {
     filter: saturate(1.4) brightness(1.3) hue-rotate(60deg);
-    animation: speaking-wave 0.8s ease-in-out infinite;
+    animation: speaking-wave 1s ease-in-out infinite, blob-morph 4s ease-in-out infinite;
 }
 
 @keyframes speaking-wave {
     0%, 100% {
         transform: scale(1);
         filter: saturate(1.4) brightness(1.3) hue-rotate(60deg);
+        box-shadow: 0 0 50px rgba(16, 185, 129, 0.5);
     }
     25% {
-        transform: scale(1.03);
+        transform: scale(1.04);
         filter: saturate(1.6) brightness(1.4) hue-rotate(55deg);
     }
     50% {
         transform: scale(1.08);
         filter: saturate(1.8) brightness(1.5) hue-rotate(50deg);
+        box-shadow: 0 0 90px rgba(16, 185, 129, 0.7), 0 0 140px rgba(16, 185, 129, 0.3);
     }
     75% {
-        transform: scale(1.03);
+        transform: scale(1.04);
         filter: saturate(1.6) brightness(1.4) hue-rotate(55deg);
+    }
+}
+
+.state-waking #energy-core {
+    filter: saturate(1.6) brightness(1.5);
+    animation: waking-burst 0.8s ease-in-out infinite, deep-breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes waking-burst {
+    0%, 100% {
+        box-shadow: 0 0 40px rgba(236, 72, 153, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 100px rgba(236, 72, 153, 0.9), 0 0 160px rgba(236, 72, 153, 0.4);
+    }
+}
+
+.state-error #energy-core {
+    filter: saturate(1.3) brightness(1.1) hue-rotate(340deg);
+    animation: error-shake 0.4s ease-in-out infinite;
+}
+
+@keyframes error-shake {
+    0%, 100% {
+        transform: translateX(0);
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+    }
+    25% {
+        transform: translateX(-4px);
+    }
+    75% {
+        transform: translateX(4px);
     }
 }
 
@@ -386,10 +616,36 @@ button:active {
     pointer-events: none;
 }
 
+/* Audio-reactive ripple container */
+.audio-ripple-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.audio-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid var(--state-color, #06b6d4);
+    animation: audio-ripple 2s ease-out forwards;
+}
+
+.audio-ripple:nth-child(2) {
+    animation: audio-ripple-delayed 2s ease-out 0.3s forwards;
+}
+
+.audio-ripple:nth-child(3) {
+    animation: audio-ripple-delayed 2s ease-out 0.6s forwards;
+}
+
 /* Mic Icon Animation */
 #mic-toggle.active {
     color: #06b6d4;
-    animation: mic-pulse 1s ease-in-out infinite;
+    animation: mic-pulse 1s ease-in-out infinite, voice-pulse 0.5s ease-in-out infinite;
 }
 
 @keyframes mic-pulse {
@@ -399,7 +655,7 @@ button:active {
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 0 0 10px rgba(6, 182, 212, 0);
+        box-shadow: 0 0 0 15px rgba(6, 182, 212, 0);
     }
 }
 
@@ -471,14 +727,48 @@ button:active {
 #orbital-1,
 #orbital-2,
 #orbital-3,
-.futuristic-panel {
+.futuristic-panel,
+.blob-morph,
+.audio-ripple {
     transform: translateZ(0);
-    will-change: transform;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
-/* Smooth Transitions */
+/* Smooth Transitions - Enhanced with cubic-bezier for Siri-like feel */
 .state-transition {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth color cross-fade */
+.color-crossfade {
+    transition: 
+        background-color 2s cubic-bezier(0.4, 0, 0.2, 1),
+        border-color 2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+        filter 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Utility classes for blob effects */
+.blob-morph {
+    animation: blob-morph 8s ease-in-out infinite;
+}
+
+.blob-morph-slow {
+    animation: blob-morph-slow 12s ease-in-out infinite;
+}
+
+.blob-morph-fast {
+    animation: blob-morph-fast 4s ease-in-out infinite;
+}
+
+.gradient-flow {
+    background-size: 400% 400%;
+    animation: gradient-flow 8s ease infinite;
+}
+
+.gentle-breathe {
+    animation: gentle-breathe 4s ease-in-out infinite;
 }
 
 /* Focus Styles for Accessibility */

@@ -1,5 +1,6 @@
 // LunaEye 3D Fluid Simulation - Advanced WebGL Visualization
 // A mesmerizing fluid dynamics simulation that responds to voice and state
+// Enhanced with slower color transitions and improved audio reactivity
 
 class FluidSimulation {
     constructor(container) {
@@ -18,12 +19,24 @@ class FluidSimulation {
         
         // State
         this.currentState = 'idle';
+        this.previousState = 'idle';
         this.excitement = 0.2;
         this.targetExcitement = 0.2;
         this.audioLevel = 0;
+        this.smoothedAudioLevel = 0;
+        this.peakAudioLevel = 0;
         this.time = 0;
         this.lastTime = 0;
         this.isRunning = false;
+        
+        // Color transition timing (2-3 seconds)
+        this.colorTransitionSpeed = 0.4; // ~2.5 second transition
+        this.stateTransitionProgress = 1;
+        
+        // Audio reactivity enhancement
+        this.audioSensitivity = 1.2;
+        this.audioDecay = 0.92;
+        this.audioPeakDecay = 0.95;
         
         // Mouse/touch interaction
         this.pointers = [];
@@ -613,14 +626,34 @@ class FluidSimulation {
     }
     
     update(dt) {
-        // Smooth color transitions
-        this.lerpColors(dt * 2);
+        // Slow down color transitions to 2-3 seconds
+        this.lerpColors(dt * this.colorTransitionSpeed);
         
-        // Smooth excitement transition
-        this.excitement += (this.targetExcitement - this.excitement) * dt * 3;
+        // Update state transition progress
+        if (this.stateTransitionProgress < 1) {
+            this.stateTransitionProgress = Math.min(1, this.stateTransitionProgress + dt * 0.5);
+        }
         
-        // Add automatic splats based on excitement
-        if (Math.random() < this.excitement * 0.3) {
+        // Smooth excitement transition (slower for more fluid feel)
+        const excitementSpeed = this.excitement < this.targetExcitement ? 2 : 1.5;
+        this.excitement += (this.targetExcitement - this.excitement) * dt * excitementSpeed;
+        
+        // Enhanced audio smoothing
+        const audioTarget = this.audioLevel * this.audioSensitivity;
+        const audioSmoothingUp = 0.25;
+        const audioSmoothingDown = 0.08;
+        const audioSmoothing = audioTarget > this.smoothedAudioLevel ? audioSmoothingUp : audioSmoothingDown;
+        this.smoothedAudioLevel += (audioTarget - this.smoothedAudioLevel) * audioSmoothing;
+        
+        // Update peak audio level with decay
+        if (this.smoothedAudioLevel > this.peakAudioLevel) {
+            this.peakAudioLevel = this.smoothedAudioLevel;
+        } else {
+            this.peakAudioLevel *= this.audioPeakDecay;
+        }
+        
+        // Add automatic splats based on excitement (adjusted frequency)
+        if (Math.random() < this.excitement * 0.25) {
             const x = Math.random();
             const y = Math.random();
             const angle = Math.random() * Math.PI * 2;
@@ -628,12 +661,12 @@ class FluidSimulation {
             this.splat(x, y, Math.cos(angle) * speed * 0.01, Math.sin(angle) * speed * 0.01, false);
         }
         
-        // Audio-reactive splats
-        if (this.audioLevel > 0.1 && Math.random() < this.audioLevel * 0.5) {
-            const x = 0.5 + (Math.random() - 0.5) * 0.5;
-            const y = 0.5 + (Math.random() - 0.5) * 0.5;
+        // Enhanced audio-reactive splats
+        if (this.smoothedAudioLevel > 0.08 && Math.random() < this.smoothedAudioLevel * 0.6) {
+            const x = 0.5 + (Math.random() - 0.5) * 0.6;
+            const y = 0.5 + (Math.random() - 0.5) * 0.6;
             const angle = Math.random() * Math.PI * 2;
-            const speed = this.audioLevel * 50;
+            const speed = this.smoothedAudioLevel * 60 + this.peakAudioLevel * 20;
             this.splat(x, y, Math.cos(angle) * speed * 0.01, Math.sin(angle) * speed * 0.01, false);
         }
         
@@ -748,31 +781,45 @@ class FluidSimulation {
     setState(state) {
         if (this.currentState === state) return;
         
+        this.previousState = this.currentState;
         this.currentState = state;
         this.targetColors = { ...this.colorSchemes[state] || this.colorSchemes.idle };
+        this.stateTransitionProgress = 0;
         
-        // Adjust excitement based on state
+        // Adjust excitement based on state (with smoother target values)
         const excitementLevels = {
-            idle: 0.2,
-            waking: 0.8,
-            listening: 0.5,
-            thinking: 0.6,
-            speaking: 0.7,
-            error: 0.3
+            idle: 0.15,
+            waking: 0.85,
+            listening: 0.45,
+            thinking: 0.55,
+            speaking: 0.65,
+            error: 0.25
         };
         
-        this.targetExcitement = excitementLevels[state] || 0.2;
+        this.targetExcitement = excitementLevels[state] || 0.15;
         
-        // Trigger splat burst on state change
-        for (let i = 0; i < 5; i++) {
+        // Trigger burst on state change with varied intensity
+        const burstIntensity = {
+            idle: 3,
+            waking: 8,
+            listening: 5,
+            thinking: 6,
+            speaking: 7,
+            error: 4
+        };
+        
+        const numSplats = burstIntensity[state] || 5;
+        for (let i = 0; i < numSplats; i++) {
             setTimeout(() => {
-                const x = 0.5 + (Math.random() - 0.5) * 0.3;
-                const y = 0.5 + (Math.random() - 0.5) * 0.3;
+                const x = 0.5 + (Math.random() - 0.5) * 0.4;
+                const y = 0.5 + (Math.random() - 0.5) * 0.4;
                 const angle = Math.random() * Math.PI * 2;
-                const speed = 30 + Math.random() * 20;
+                const speed = 25 + Math.random() * 25;
                 this.splat(x, y, Math.cos(angle) * speed * 0.01, Math.sin(angle) * speed * 0.01, true);
-            }, i * 50);
+            }, i * 60);
         }
+        
+        console.log(`🌊 Fluid state: ${this.previousState} → ${state}`);
     }
     
     setExcitement(level) {
@@ -783,7 +830,20 @@ class FluidSimulation {
         this.audioLevel = Math.max(0, Math.min(1, level));
     }
     
+    // Get current smoothed audio level (for external sync)
+    getSmoothedAudioLevel() {
+        return this.smoothedAudioLevel;
+    }
+    
+    // Get peak audio level (for external sync)
+    getPeakAudioLevel() {
+        return this.peakAudioLevel;
+    }
+    
     lerpColors(factor) {
+        // Use cubic easing for smoother color transitions
+        const easedFactor = factor * factor * (3 - 2 * factor); // smoothstep
+        
         const lerp = (a, b, t) => a + (b - a) * t;
         const lerpColor = (current, target, t) => [
             lerp(current[0], target[0], t),
@@ -791,10 +851,10 @@ class FluidSimulation {
             lerp(current[2], target[2], t)
         ];
         
-        this.currentColors.primary = lerpColor(this.currentColors.primary, this.targetColors.primary, factor);
-        this.currentColors.secondary = lerpColor(this.currentColors.secondary, this.targetColors.secondary, factor);
-        this.currentColors.accent = lerpColor(this.currentColors.accent, this.targetColors.accent, factor);
-        this.currentColors.background = lerpColor(this.currentColors.background, this.targetColors.background, factor);
+        this.currentColors.primary = lerpColor(this.currentColors.primary, this.targetColors.primary, easedFactor);
+        this.currentColors.secondary = lerpColor(this.currentColors.secondary, this.targetColors.secondary, easedFactor);
+        this.currentColors.accent = lerpColor(this.currentColors.accent, this.targetColors.accent, easedFactor);
+        this.currentColors.background = lerpColor(this.currentColors.background, this.targetColors.background, easedFactor);
     }
     
     showFallback() {
