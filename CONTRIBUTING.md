@@ -13,8 +13,8 @@ Thank you for your interest in contributing to LunaEye! 🌙
 ### Fork & Clone
 ```bash
 # Fork this repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/LunaEye_v1.git
-cd LunaEye_v1
+git clone https://github.com/lefyd24/LunaEye.git
+cd LunaEye
 ```
 
 ### Run Locally
@@ -154,7 +154,7 @@ Closes #123
 
 ## 🐛 Reporting Bugs
 
-Use the [GitHub Issues](https://github.com/yourusername/LunaEye_v1/issues) page.
+Use the [GitHub Issues](https://github.com/lefyd24/LunaEye/issues) page.
 
 ### Bug Report Template
 ```markdown
@@ -186,7 +186,7 @@ Paste any errors from browser console
 
 ## 💡 Feature Requests
 
-Feature requests are welcome! Please check [existing issues](https://github.com/yourusername/LunaEye_v1/issues) first.
+Feature requests are welcome! Please check [existing issues](https://github.com/lefyd24/LunaEye/issues) first.
 
 ### Feature Request Template
 ```markdown
