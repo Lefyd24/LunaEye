@@ -54,7 +54,7 @@ class VoiceManager {
         };
         
         // Audio sensitivity settings
-        this.audioSensitivity = 0.02; // Lower = more sensitive
+        this.audioSensitivity = 0.7; // Lower = more sensitive
         this.silenceThreshold = 0.01;
         
         this.init();
