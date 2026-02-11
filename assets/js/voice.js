@@ -430,13 +430,45 @@ class VoiceManager {
         const confidence = lastResult[0]?.confidence || 0;
         const isFinal = lastResult.isFinal;
         
+        const currentState = window.AppState?.getCurrentState();
+        
+        // During speaking: ONLY allow wake word detection for interruption
+        // With echoCancellation: "all", the TTS audio should be removed from mic input
+        if (currentState === 'speaking' || this.isSpeaking) {
+            // Only process final results during speaking
+            if (!isFinal) {
+                return;
+            }
+            
+            // Check if user said wake word to interrupt
+            if (this.detectWakeWord(primaryTranscript)) {
+                console.log('🛑 Wake word detected during speaking - interrupting!');
+                this.interruptSpeaking();
+                // Extract command if any
+                const command = this.extractCommandFromTranscript(primaryTranscript);
+                if (command && command.length > 2) {
+                    // Process the new command immediately
+                    setTimeout(() => {
+                        this.onCommandReceived(command, confidence);
+                    }, 300);
+                } else {
+                    // Just interrupted, go to listening state
+                    setTimeout(() => {
+                        window.AppState?.setState('listening', { source: 'interruption' });
+                        this.startListeningTimeout();
+                    }, 300);
+                }
+            }
+            // Ignore all other speech during speaking (likely TTS echo despite cancellation)
+            return;
+        }
+        
         // Always show interim results for real-time feedback
         if (!isFinal) {
             // Show what we're hearing in real-time
             this.onInterimResult(primaryTranscript);
             
             // In listening state, also check if we should process long interim results
-            const currentState = window.AppState?.getCurrentState();
             if (currentState === 'listening' && primaryTranscript.length > 20) {
                 // Long interim result - might be a complete sentence
                 // Update UI but don't process yet
@@ -452,8 +484,6 @@ class VoiceManager {
         if (primaryTranscript.length > 0) {
             this.consecutiveErrors = 0;
         }
-        
-        const currentState = window.AppState?.getCurrentState();
         
         // In idle state, only respond to wake word
         if (currentState === 'idle' && !this.isInConversation) {
@@ -614,9 +644,14 @@ class VoiceManager {
         this.clearListeningTimeout();
         this.clearConversationTimeout();
         
-        if (!this.config.useLocalDetection) {
-            this.stopWakeWordDetection();
+        // Add final user transcript to chat
+        if (window.UIController) {
+            window.UIController.updateTranscript(transcript, true);
         }
+        
+        // DO NOT stop recognition anymore - let it continue for interruption
+        // With echoCancellation: "all", TTS audio should be removed from mic input
+        // Recognition will stay active and only respond to wake word during speaking
         
         // Mark that we're in an active conversation
         this.isInConversation = true;
@@ -630,22 +665,31 @@ class VoiceManager {
             this.isSpeaking = true;
             window.AppState?.setState('speaking', { command: transcript, response });
             
+            // Add response to chat
+            if (window.UIController && response.text) {
+                window.UIController.showResponse(response.text);
+            }
+            
             // Wait for speech to FULLY complete before changing state
             await this.speak(response.text);
             
-            // Speech is done
-            this.isSpeaking = false;
-            
-            // Go back to LISTENING (not idle) to continue the conversation
-            window.AppState?.setState('listening', { source: 'conversation-continue' });
-            
-            // Resume wake word detection (but in conversation mode, we accept commands without wake word)
-            if (!this.config.useLocalDetection) {
-                this.resumeWakeWordDetection();
+            // Speech is done - check if we were interrupted
+            if (this.isSpeaking) {
+                // Speech completed naturally (not interrupted)
+                this.isSpeaking = false;
+                
+                // Go back to LISTENING (not idle) to continue the conversation
+                window.AppState?.setState('listening', { source: 'conversation-continue' });
+                
+                // Start conversation timeout
+                this.startConversationTimeout();
+            } else {
+                // Was interrupted - isSpeaking was set to false by interruptSpeaking()
+                console.log('✅ Speech was interrupted by user');
             }
             
-            // Start conversation timeout - after 15 seconds of silence, go back to idle
-            this.startConversationTimeout();
+            // Reset speaking flag just in case
+            this.isSpeaking = false;
             
         } catch (error) {
             console.error('Command processing failed:', error);
@@ -655,10 +699,6 @@ class VoiceManager {
             // Recover to listening after a short delay (stay in conversation)
             await this.delay(1500);
             window.AppState?.setState('listening', { source: 'error-recovery' });
-            
-            if (!this.config.useLocalDetection) {
-                this.resumeWakeWordDetection();
-            }
             
             this.startConversationTimeout();
         }
@@ -695,10 +735,24 @@ class VoiceManager {
             
             // Request new stream only if we don't have one
             console.log('Requesting new microphone permission...');
+            
+            // Detect browser and version for advanced echo cancellation
+            const userAgent = navigator.userAgent;
+            const chromeMatch = userAgent.match(/Chrome\/(\d+)/);
+            const edgeMatch = userAgent.match(/Edg\/(\d+)/);
+            const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : 0;
+            const edgeVersion = edgeMatch ? parseInt(edgeMatch[1]) : 0;
+            
+            // Use "all" for Chrome 141+ or Edge 141+ (removes ALL system-generated audio including TTS)
+            const supportsAdvancedEchoCancellation = chromeVersion >= 141 || edgeVersion >= 141;
+            const echoCancellationValue = supportsAdvancedEchoCancellation ? "all" : true;
+            
+            console.log(`🎤 Using echoCancellation: "${echoCancellationValue}" (Chrome: ${chromeVersion}, Edge: ${edgeVersion})`);
+            
             // Request audio with enhanced settings for better sensitivity
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
-                    echoCancellation: true,
+                    echoCancellation: echoCancellationValue,
                     noiseSuppression: true,
                     autoGainControl: true,
                     channelCount: 1,
@@ -707,7 +761,17 @@ class VoiceManager {
             });
             this.audioStream = stream;
             await this.initAudioContext(stream);
-            console.log('Microphone permission granted with enhanced settings');
+            
+            // Verify actual settings being used
+            const audioTrack = stream.getAudioTracks()[0];
+            const settings = audioTrack.getSettings();
+            console.log('🎤 Actual audio settings:', {
+                echoCancellation: settings.echoCancellation,
+                noiseSuppression: settings.noiseSuppression,
+                autoGainControl: settings.autoGainControl,
+                sampleRate: settings.sampleRate
+            });
+            
             return true;
         } catch (error) {
             console.error('Microphone permission denied:', error);
@@ -771,10 +835,8 @@ class VoiceManager {
     }
     
     onInterimResult(transcript) {
-        if (window.UIController) {
-            // Show interim result with visual indicator that it's still processing
-            window.UIController.updateTranscript(transcript + ' ...');
-        }
+        // Don't show interim results in chat - only log them
+        console.log('📝 Interim:', transcript);
         
         // Reset conversation timeout when user is speaking (interim results)
         // This prevents timeout from firing while user is actively talking
@@ -783,7 +845,7 @@ class VoiceManager {
             console.log('🗣️ User is speaking, conversation timeout reset');
         }
         
-        // Also update fluid simulation to show we're hearing something
+        // Update fluid simulation to show we're hearing something
         if (window.fluidSimulation && transcript.length > 0) {
             window.fluidSimulation.setExcitement(0.4);
         }
@@ -932,6 +994,9 @@ class VoiceManager {
                 return;
             }
             
+            // Store resolve function so we can call it if interrupted
+            this.currentSpeechResolve = resolve;
+            
             try {
                 this.synthesis.cancel();
                 
@@ -1001,11 +1066,13 @@ class VoiceManager {
                     if (window.fluidSimulation) {
                         window.fluidSimulation.setExcitement(0.2);
                     }
+                    this.currentSpeechResolve = null;
                     resolve();
                 };
                 
                 utterance.onerror = (event) => {
                     console.error('Speech synthesis error:', event.error);
+                    this.currentSpeechResolve = null;
                     resolve();
                 };
                 
@@ -1013,9 +1080,50 @@ class VoiceManager {
                 
             } catch (error) {
                 console.error('Speech synthesis failed:', error);
+                this.currentSpeechResolve = null;
                 resolve();
             }
         });
+    }
+    
+    // Interrupt speaking (called when user taps mic button during speaking)
+    async interruptSpeaking() {
+        console.log('🛑 Interrupting speech synthesis...');
+        
+        // Cancel any ongoing speech
+        if (this.synthesis) {
+            this.synthesis.cancel();
+        }
+        
+        // Reset speaking state
+        this.isSpeaking = false;
+        
+        // Resolve the pending speak promise if any
+        if (this.currentSpeechResolve) {
+            this.currentSpeechResolve();
+            this.currentSpeechResolve = null;
+        }
+        
+        // Update fluid simulation
+        if (window.fluidSimulation) {
+            window.fluidSimulation.setExcitement(0.4);
+        }
+        
+        // Transition to listening state
+        window.AppState?.setState('listening', { source: 'interrupt' });
+        
+        // Wait a moment for audio to fully stop before resuming recognition
+        await this.delay(300);
+        
+        // Resume recognition now that speaking has stopped
+        if (!this.config.useLocalDetection) {
+            this.resumeWakeWordDetection();
+        }
+        
+        // Start conversation timeout
+        this.startConversationTimeout();
+        
+        console.log('✅ Speech interrupted - now in listening mode');
     }
     
     // Audio visualization for Web Speech API

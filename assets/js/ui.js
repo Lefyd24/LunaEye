@@ -6,6 +6,11 @@ class UIController {
         this.isSettingsOpen = false;
         this.installPrompt = null;
         this.messageTimeout = null;
+        this.commDisplayTimeout = null;
+        this.commDisplayAutoHideDelay = 60000; // 1 minute
+        this.chatHistory = []; // Store chat messages
+        this.maxMessages = 4; // Show last 4 messages (2 user + 2 agent)
+        this.isTranscribing = false; // Track if we're in the middle of transcribing
         
         this.init();
     }
@@ -44,12 +49,7 @@ class UIController {
             // Main content
             stateIndicator: document.getElementById('state-indicator'),
             commDisplay: document.querySelector('.comm-display'),
-            transcriptCard: document.getElementById('transcript-card'),
-            transcriptText: document.getElementById('transcript-text'),
-            transcriptPlaceholder: document.getElementById('transcript-placeholder'),
-            responseCard: document.getElementById('response-card'),
-            responseDisplay: document.getElementById('response-card'),
-            responseText: document.getElementById('response-text'),
+            chatMessages: document.getElementById('chat-messages'),
             
             // Footer
             audioIndicator: document.getElementById('audio-indicator'),
@@ -190,34 +190,27 @@ class UIController {
         // Handle state-specific UI updates
         switch (state) {
             case 'idle':
-                this.hideResponse();
-                this.clearTranscript();
-                this.hideCommDisplay();
+                // Don't hide chat when going idle - let auto-hide handle it
                 break;
             case 'waking':
                 this.showCommDisplay();
-                this.showTranscriptPlaceholder('Wake word detected!');
                 break;
             case 'listening':
                 this.showCommDisplay();
-                this.showTranscriptPlaceholder('Listening...');
                 break;
             case 'thinking':
                 this.showCommDisplay();
-                this.showTranscriptPlaceholder('Processing...');
-                if (context?.command) {
-                    this.updateTranscript(context.command);
-                }
+                // Command will be added by voice.js via updateTranscript
                 break;
             case 'speaking':
                 this.showCommDisplay();
-                if (context?.response?.text) {
-                    this.showResponse(context.response.text);
-                }
+                // Response will be added by voice.js via showResponse
                 break;
             case 'error':
                 this.showCommDisplay();
-                this.showResponse(context?.error || 'An error occurred');
+                if (context?.error) {
+                    this.addAgentMessage('Error: ' + context.error);
+                }
                 break;
         }
     }
@@ -266,55 +259,125 @@ class UIController {
         }
     }
     
-    updateTranscript(text) {
-        if (this.elements.transcriptText) {
-            this.elements.transcriptText.textContent = text;
-            this.elements.transcriptText.classList.remove('comm-placeholder');
+    // Add a user message to chat history
+    addUserMessage(text) {
+        this.addChatMessage('user', 'YOU', text);
+    }
+    
+    // Add an agent message to chat history
+    addAgentMessage(text) {
+        this.addChatMessage('agent', 'LUNA', text);
+    }
+    
+    // Add a message to chat history
+    addChatMessage(type, label, text) {
+        if (!text || text.trim() === '') return;
+        
+        // Add to history
+        this.chatHistory.push({
+            type: type,
+            label: label,
+            text: text,
+            timestamp: Date.now()
+        });
+        
+        // Keep only last maxMessages
+        if (this.chatHistory.length > this.maxMessages) {
+            this.chatHistory = this.chatHistory.slice(-this.maxMessages);
         }
-        if (this.elements.transcriptPlaceholder) {
-            this.elements.transcriptPlaceholder.style.display = 'none';
+        
+        // Render chat
+        this.renderChatMessages();
+        
+        // Show display and reset auto-hide
+        this.showCommDisplay();
+    }
+    
+    // Render all chat messages
+    renderChatMessages() {
+        if (!this.elements.chatMessages) return;
+        
+        // Clear existing messages
+        this.elements.chatMessages.innerHTML = '';
+        
+        // Render each message
+        this.chatHistory.forEach((message, index) => {
+            const messageCard = document.createElement('div');
+            messageCard.className = `comm-card ${message.type}`;
+            
+            const label = document.createElement('div');
+            label.className = 'comm-label';
+            label.textContent = message.label;
+            
+            const text = document.createElement('div');
+            text.className = 'comm-text';
+            text.textContent = message.text;
+            
+            messageCard.appendChild(label);
+            messageCard.appendChild(text);
+            this.elements.chatMessages.appendChild(messageCard);
+            
+            // Animate in with delay
+            setTimeout(() => {
+                messageCard.classList.add('active');
+            }, index * 50);
+        });
+        
+        // Auto-scroll to bottom after rendering
+        setTimeout(() => {
+            if (this.elements.chatMessages) {
+                this.elements.chatMessages.scrollTop = this.elements.chatMessages.scrollHeight;
+            }
+        }, this.chatHistory.length * 50 + 100);
+    }
+    
+    // Clear all chat messages
+    clearChatMessages() {
+        this.chatHistory = [];
+        if (this.elements.chatMessages) {
+            this.elements.chatMessages.innerHTML = '';
         }
-        if (this.elements.transcriptCard) {
-            this.elements.transcriptCard.classList.add('active');
+    }
+    
+    updateTranscript(text, isFinal = false) {
+        // During transcription, don't add intermediate results
+        if (!isFinal) {
+            this.isTranscribing = true;
+            return;
+        }
+        
+        // Only add final transcription as user message
+        if (text && text.trim() !== '') {
+            this.addUserMessage(text);
+            this.isTranscribing = false;
         }
     }
     
     clearTranscript() {
-        if (this.elements.transcriptText) {
-            this.elements.transcriptText.textContent = '';
-            this.elements.transcriptText.classList.add('comm-placeholder');
-        }
-        this.showTranscriptPlaceholder('Waiting for your voice...');
+        // No longer needed with chat history
     }
     
     showTranscriptPlaceholder(text) {
-        if (this.elements.transcriptPlaceholder) {
-            this.elements.transcriptPlaceholder.textContent = text;
-            this.elements.transcriptPlaceholder.style.display = 'inline';
-        }
-        if (this.elements.transcriptText) {
-            this.elements.transcriptText.textContent = '';
-        }
+        // No longer needed with chat history
     }
     
     showResponse(text) {
-        if (this.elements.responseText) {
-            this.elements.responseText.textContent = text;
-        }
-        if (this.elements.responseCard) {
-            this.elements.responseCard.classList.add('active');
+        // Add response as agent message
+        if (text && text.trim() !== '') {
+            this.addAgentMessage(text);
         }
     }
     
     hideResponse() {
-        if (this.elements.responseCard) {
-            this.elements.responseCard.classList.remove('active');
-        }
+        // No longer needed - messages stay in chat
     }
     
     showCommDisplay() {
         if (this.elements.commDisplay) {
             this.elements.commDisplay.classList.add('visible');
+            
+            // Reset auto-hide timer
+            this.resetCommDisplayAutoHide();
         }
     }
     
@@ -322,6 +385,25 @@ class UIController {
         if (this.elements.commDisplay) {
             this.elements.commDisplay.classList.remove('visible');
         }
+        
+        // Clear auto-hide timer
+        if (this.commDisplayTimeout) {
+            clearTimeout(this.commDisplayTimeout);
+            this.commDisplayTimeout = null;
+        }
+    }
+    
+    resetCommDisplayAutoHide() {
+        // Clear existing timeout
+        if (this.commDisplayTimeout) {
+            clearTimeout(this.commDisplayTimeout);
+        }
+        
+        // Set new timeout to auto-hide after 1 minute
+        this.commDisplayTimeout = setTimeout(() => {
+            console.log('Auto-hiding comm-display after inactivity');
+            this.hideCommDisplay();
+        }, this.commDisplayAutoHideDelay);
     }
     
     showTemporaryMessage(text, duration = 3000) {
@@ -340,6 +422,16 @@ class UIController {
     toggleMicrophone() {
         if (!window.VoiceManager) {
             console.warn('VoiceManager not available');
+            return;
+        }
+        
+        // Check if we're in speaking state - if so, interrupt
+        const currentState = window.AppState?.getCurrentState();
+        if (currentState === 'speaking' || window.VoiceManager.isSpeaking) {
+            console.log('Mic tap during speaking - interrupting...');
+            window.VoiceManager.interruptSpeaking();
+            this.elements.micBtn?.classList.add('active');
+            this.elements.micBtn?.classList.remove('muted');
             return;
         }
         
